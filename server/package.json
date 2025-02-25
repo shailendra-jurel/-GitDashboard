@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "git , github , visualisation , repostiories , pr and work together , team",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "github",
+    "visualisation",
+    "repostiories",
+    "pr",
+    "and",
+    "work",
+    "together",
+    "team"
+  ],
+  "author": "Shailendra Jurel",
+  "license": "ISC"
+}
