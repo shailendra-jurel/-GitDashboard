@@ -1,9 +1,9 @@
 // components/auth/Login.js
+import { GithubOutlined } from '@ant-design/icons';
+import { Button, Card, Typography } from 'antd';
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Typography, Card } from 'antd';
-import { GithubOutlined } from '@ant-design/icons';
 import { fetchUserData } from '../../store/slices/authSlice';
 
 const { Title, Text } = Typography;
@@ -21,7 +21,7 @@ const Login = ({ setIsAuthenticated }) => {
       
       if (code) {
         try {
-          const response = await fetch('/api/auth/callback', {
+          const response = await fetch('http://localhost:5000/api/auth/callback', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -48,7 +48,7 @@ const Login = ({ setIsAuthenticated }) => {
   }, [location, dispatch, navigate, setIsAuthenticated]);
 
   const handleLogin = () => {
-    const clientId = process.env.REACT_APP_GITHUB_CLIENT_ID;
+    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/callback`;
     const scope = 'repo user';
     
