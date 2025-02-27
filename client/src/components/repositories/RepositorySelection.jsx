@@ -1,9 +1,8 @@
-// components/repositories/RepositorySelection.js
+import { ForkOutlined, SearchOutlined, StarOutlined } from '@ant-design/icons';
+import { Button, Card, Checkbox, Empty, Input, List, Spin, Typography, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Card, List, Checkbox, Button, Typography, Input, Spin, Empty, message } from 'antd';
-import { SearchOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { fetchRepositories, saveSelectedRepositories } from '../../store/slices/repositorySlice';
 
 const { Title, Text } = Typography;
@@ -12,67 +11,63 @@ const { Search } = Input;
 const RepositorySelection = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { available, selected, loading, error } = useSelector(state => state.repositories);
+  // Use destructuring that matches your Redux store structure
+  const { available: repositories, selected, loading, error } = useSelector(state => state.repositories);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRepos, setSelectedRepos] = useState([]);
+  const [filteredRepos, setFilteredRepos] = useState([]);
 
+  // Fetch repositories when component mounts
   useEffect(() => {
     dispatch(fetchRepositories());
   }, [dispatch]);
 
+  // Update filtered repositories when repositories or search term changes
   useEffect(() => {
-    if (selected.length > 0) {
-      setSelectedRepos(selected.map(repo => repo.id));
+    if (repositories && repositories.length > 0) {
+      setFilteredRepos(
+        repositories.filter(repo =>
+          repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        )
+      );
+    } else {
+      setFilteredRepos([]);
     }
-  }, [selected]);
+  }, [repositories, searchTerm]);
 
-  const handleSearch = (value) => {
+  const handleSearch = value => {
     setSearchTerm(value);
   };
 
-  const handleToggleRepository = (repo) => {
-    setSelectedRepos(prev => {
-      if (prev.includes(repo.id)) {
-        return prev.filter(id => id !== repo.id);
-      } else {
-        return [...prev, repo.id];
-      }
-    });
+  // Toggle repository selection
+  const handleSelectRepository = (repo) => {
+    const isSelected = selected.some(r => r.id === repo.id);
+    const newSelected = isSelected
+      ? selected.filter(r => r.id !== repo.id)
+      : [...selected, repo];
+    
+    dispatch(saveSelectedRepositories(newSelected));
   };
 
-  const handleSelectAll = () => {
-    setSelectedRepos(available.map(repo => repo.id));
-  };
-
-  const handleDeselectAll = () => {
-    setSelectedRepos([]);
-  };
-
-  const handleSaveSelection = async () => {
-    if (selectedRepos.length === 0) {
+  const handleContinue = () => {
+    if (selected.length === 0) {
       message.error('Please select at least one repository');
       return;
     }
-
-    const selectedRepositories = available.filter(repo => selectedRepos.includes(repo.id));
-    await dispatch(saveSelectedRepositories(selectedRepositories));
     message.success('Repositories selected successfully');
     navigate('/dashboard');
   };
 
-  const filteredRepositories = available.filter(repo => 
-    repo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (repo.description && repo.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  if (loading && available.length === 0) {
+  // Handle loading state
+  if (loading && (!repositories || repositories.length === 0)) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-64">
         <Spin size="large" />
       </div>
     );
   }
 
+  // Handle error state
   if (error) {
     return (
       <div className="mt-8 text-center">
@@ -87,86 +82,73 @@ const RepositorySelection = () => {
   }
 
   return (
-    <div className="py-8">
-      <Card className="shadow-md">
-        <Title level={2}>Select Repositories</Title>
-        <Text className="block mb-4">
-          Choose the repositories you want to monitor in your dashboard
-        </Text>
-
-        <div className="mb-4 flex items-center space-x-2">
-          <Search
-            placeholder="Search repositories..."
-            allowClear
-            enterButton={<SearchOutlined />}
-            size="large"
-            onSearch={handleSearch}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-grow"
-          />
-        </div>
-
-        <div className="mb-4 flex justify-between">
-          <div>
-            <Button onClick={handleSelectAll} className="mr-2">
-              Select All
-            </Button>
-            <Button onClick={handleDeselectAll}>
-              Deselect All
-            </Button>
-          </div>
-          <div>
-            <Text className="mr-2">
-              {selectedRepos.length} of {available.length} repositories selected
-            </Text>
-          </div>
-        </div>
-
-        {filteredRepositories.length > 0 ? (
-          <List
-            dataSource={filteredRepositories}
-            renderItem={repo => (
-              <List.Item
-                key={repo.id}
-                className={`border rounded-lg p-4 mb-2 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedRepos.includes(repo.id) ? 'bg-blue-50 border-blue-300' : ''
-                }`}
-                onClick={() => handleToggleRepository(repo)}
+    <div className="max-w-4xl mx-auto py-8">
+      <Title level={2} className="mb-6">Select Repositories to Monitor</Title>
+      
+      <div className="mb-6">
+        <Search
+          placeholder="Search repositories..."
+          allowClear
+          enterButton={<SearchOutlined />}
+          size="large"
+          onSearch={handleSearch}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+      </div>
+      
+      {filteredRepos.length > 0 ? (
+        <List
+          grid={{ gutter: 16, column: 1 }}
+          dataSource={filteredRepos}
+          renderItem={repo => (
+            <List.Item>
+              <Card 
+                hoverable 
+                className={`transition-all ${selected.some(r => r.id === repo.id) ? 'border-blue-500 border-2' : ''}`}
+                onClick={() => handleSelectRepository(repo)}
               >
-                <div className="flex items-center w-full">
-                  <Checkbox
-                    checked={selectedRepos.includes(repo.id)}
-                    className="mr-4"
-                    onChange={() => {}}
-                  />
-                  <div className="flex-grow">
-                    <div className="font-semibold">{repo.name}</div>
-                    {repo.description && (
-                      <div className="text-gray-500 text-sm">{repo.description}</div>
-                    )}
-                  </div>
-                  {selectedRepos.includes(repo.id) && (
-                    <CheckCircleOutlined className="text-blue-500 text-lg" />
-                  )}
+                <Checkbox 
+                  checked={selected.some(r => r.id === repo.id)} 
+                  className="float-right"
+                  onChange={(e) => {
+                    // Prevent event propagation to avoid double triggering with Card click
+                    e.stopPropagation();
+                    handleSelectRepository(repo);
+                  }}
+                />
+                <Title level={4} className="mb-1">{repo.name}</Title>
+                <Text type="secondary" ellipsis className="block mb-3">
+                  {repo.description || 'No description available'}
+                </Text>
+                <div className="flex items-center text-sm text-gray-500">
+                  <span className="mr-4">
+                    <StarOutlined className="mr-1" />
+                    {repo.stargazers_count || 0}
+                  </span>
+                  <span>
+                    <ForkOutlined className="mr-1" />
+                    {repo.forks_count || 0}
+                  </span>
                 </div>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty description="No repositories found" />
-        )}
-
-        <div className="mt-6 flex justify-end">
-          <Button
-            type="primary"
-            size="large"
-            onClick={handleSaveSelection}
-            disabled={selectedRepos.length === 0}
-          >
-            Continue to Dashboard
-          </Button>
-        </div>
-      </Card>
+              </Card>
+            </List.Item>
+          )}
+        />
+      ) : (
+        <Empty description="No repositories found" />
+      )}
+      
+      <div className="mt-8 flex justify-between items-center">
+        <Text>{selected.length} repositories selected</Text>
+        <Button 
+          type="primary" 
+          size="large" 
+          onClick={handleContinue}
+          disabled={selected.length === 0}
+        >
+          Continue to Dashboard
+        </Button>
+      </div>
     </div>
   );
 };

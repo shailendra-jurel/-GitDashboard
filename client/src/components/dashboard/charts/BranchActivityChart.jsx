@@ -1,16 +1,15 @@
-// components/dashboard/charts/BranchActivityChart.js
+import { Card, Empty, Radio, Spin, Typography } from 'antd';
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Card, Typography, Empty, Spin, Radio } from 'antd';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
 
 const { Title } = Typography;
@@ -58,7 +57,7 @@ const BranchActivityChart = () => {
       </div>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
+          <AreaChart
             data={branchData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
@@ -67,19 +66,25 @@ const BranchActivityChart = () => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar 
+            <Area 
+              type="monotone" 
               dataKey="created" 
               name="Branches Created" 
-              stackId={viewType === 'stacked' ? 'a' : undefined} 
-              fill="#8884d8" 
+              stroke="#52c41a" 
+              fill="#52c41a" 
+              fillOpacity={0.3} 
+              stackId="1"
             />
-            <Bar 
+            <Area 
+              type="monotone" 
               dataKey="deleted" 
               name="Branches Deleted" 
-              stackId={viewType === 'stacked' ? 'a' : undefined} 
-              fill="#82ca9d" 
+              stroke="#f5222d" 
+              fill="#f5222d" 
+              fillOpacity={0.3} 
+              stackId="1"
             />
-          </BarChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </Card>

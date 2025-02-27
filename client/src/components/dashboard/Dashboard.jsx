@@ -1,16 +1,16 @@
 // components/dashboard/Dashboard.js
+import { Alert, Empty, Layout, Spin, Typography } from 'antd';
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Layout, Spin, Empty, Typography, Alert } from 'antd';
+import { fetchContributors, fetchDashboardData } from '../../store/slices/dashboardSlice';
 import { fetchRepositories } from '../../store/slices/repositorySlice';
-import { fetchDashboardData, fetchContributors } from '../../store/slices/dashboardSlice';
 import Sidebar from '../layout/Sidebar';
-import DashboardHeader from './DashboardHeader';
-import MetricsOverview from './MetricsOverview';
+import BranchActivityChart from './charts/BranchActivityChart';
 import PullRequestsChart from './charts/PullRequestsChart';
 import TimeToMergeChart from './charts/TimeToMergeChart';
-import BranchActivityChart from './charts/BranchActivityChart';
 import ContributorsList from './ContributorsList';
+import DashboardHeader from './DashboardHeader';
+import MetricsOverview from './MetricsOverview';
 
 const { Content, Sider } = Layout;
 const { Title } = Typography;
@@ -25,9 +25,16 @@ const Dashboard = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (currentRepository) {
-      dispatch(fetchDashboardData({ repoId: currentRepository.id, timeRange }));
-      dispatch(fetchContributors(currentRepository.id));
+    if (currentRepository && currentRepository.owner && currentRepository.name) {
+      dispatch(fetchDashboardData({ 
+        owner: currentRepository.owner.login,
+        repo: currentRepository.name,
+        timeRange 
+      }));
+      dispatch(fetchContributors({ 
+        owner: currentRepository.owner.login,
+        repo: currentRepository.name 
+      }));
     }
   }, [dispatch, currentRepository, timeRange]);
 

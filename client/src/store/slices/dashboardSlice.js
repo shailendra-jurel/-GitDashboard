@@ -1,34 +1,39 @@
 // store/slices/dashboardSlice.js
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchData',
-  async ({ repoId, timeRange }, { rejectWithValue }) => {
+  async ({ owner, repo, timeRange }, { rejectWithValue }) => {
     try {
+      // Check if owner and repo are defined
+      if (!owner || !repo) {
+        return rejectWithValue('Repository information is missing');
+      }
       const token = localStorage.getItem('github_token');
-      const response = await fetch(`/api/dashboard/${repoId}?timeRange=${timeRange}`, {
+      const response = await fetch(`/api/dashboard/${owner}/${repo}/metrics?timeRange=${timeRange}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        return rejectWithValue(errorData.error || `Error: ${response.status}`);
       }
       
       return await response.json();
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Failed to fetch dashboard data');
     }
   }
 );
 
 export const fetchContributors = createAsyncThunk(
   'dashboard/fetchContributors',
-  async (repoId, { rejectWithValue }) => {
+  async ({ owner, repo }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem('github_token');
-      const response = await fetch(`/api/dashboard/${repoId}/contributors`, {
+      const response = await fetch(`/api/dashboard/${owner}/${repo}/contributors`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -45,20 +50,22 @@ export const fetchContributors = createAsyncThunk(
   }
 );
 
+const initialState = {
+  metrics: {
+    prMerged: [],
+    prTimeToMerge: [],
+    branchActivity: []
+  },
+  contributors: [],
+  selectedContributors: [],
+  timeRange: '3m',
+  loading: false,
+  error: null
+};
+
 const dashboardSlice = createSlice({
   name: 'dashboard',
-  initialState: {
-    metrics: {
-      prMerged: [],
-      prTimeToMerge: [],
-      branchActivity: []
-    },
-    contributors: [],
-    selectedContributors: [],
-    timeRange: '3months',
-    loading: false,
-    error: null
-  },
+  initialState,
   reducers: {
     setTimeRange: (state, action) => {
       state.timeRange = action.payload;

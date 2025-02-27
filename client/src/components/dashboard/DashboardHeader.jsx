@@ -1,12 +1,11 @@
-// components/dashboard/DashboardHeader.js
+import { HomeOutlined, SettingOutlined } from '@ant-design/icons';
+import { Breadcrumb, Button, Radio, Typography } from 'antd';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Typography, Radio, Space, Button, Tag } from 'antd';
-import { GithubOutlined, ReloadOutlined } from '@ant-design/icons';
-import { setTimeRange } from '../../store/slices/dashboardSlice';
-import { fetchDashboardData } from '../../store/slices/dashboardSlice';
+import { Link } from 'react-router-dom';
+import { setTimeRange, fetchDashboardData  } from '../../store/slices/dashboardSlice';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const DashboardHeader = ({ repository }) => {
   const dispatch = useDispatch();
@@ -15,66 +14,59 @@ const DashboardHeader = ({ repository }) => {
   const handleTimeRangeChange = (e) => {
     const newTimeRange = e.target.value;
     dispatch(setTimeRange(newTimeRange));
-    dispatch(fetchDashboardData({ repoId: repository.id, timeRange: newTimeRange }));
+    dispatch(fetchDashboardData({ 
+      owner: repository.owner.login, 
+      repo: repository.name, 
+      timeRange: newTimeRange 
+    }));
   };
 
-
   const handleRefresh = () => {
-    dispatch(fetchDashboardData({ repoId: repository.id, timeRange }));
+    dispatch(fetchDashboardData({ 
+      owner: repository.owner.login, 
+      repo: repository.name, 
+      timeRange 
+    }));
   };
 
   return (
     <div className="mb-6">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-        <div className="mb-4 md:mb-0">
-          <Title level={3} className="mb-1">
-            {repository.name}
-          </Title>
-          <Text className="text-gray-500">
-            {repository.description || 'No description provided'}
-          </Text>
-          <div className="mt-2">
-            <a 
-              href={repository.htmlUrl} 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-blue-600 hover:text-blue-800"
-            >
-              <GithubOutlined className="mr-1" />
-              View on GitHub
-            </a>
-          </div>
-        </div>
+      <Breadcrumb className="mb-2">
+        <Breadcrumb.Item>
+          <Link to="/dashboard">
+            <HomeOutlined /> Dashboard
+          </Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <span>{repository.owner.login}</span>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <span>{repository.name}</span>
+        </Breadcrumb.Item>
+      </Breadcrumb>
+      
+      <div className="flex flex-wrap justify-between items-center">
+        <Title level={2} className="mb-0">
+          {repository.name}
+        </Title>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center">
-          <Radio.Group 
-            value={timeRange} 
-            onChange={handleTimeRangeChange}
-            optionType="button"
-            buttonStyle="solid"
-            className="mb-2 sm:mb-0 sm:mr-4"
-          >
-            <Radio.Button value="3months">3 Months</Radio.Button>
-            <Radio.Button value="6months">6 Months</Radio.Button>
-            <Radio.Button value="1year">1 Year</Radio.Button>
+        <div className="flex items-center">
+            <Radio.Group 
+                  value={timeRange} 
+                  onChange={handleTimeRangeChange}
+                  buttonStyle="solid"
+                  className="mr-4"
+             >
+            <Radio.Button value="1w">7 Days</Radio.Button>
+            <Radio.Button value="1m">30 Days</Radio.Button>
+            <Radio.Button value="3m">3 Months</Radio.Button>
+            <Radio.Button value="1y">1 Year</Radio.Button>
           </Radio.Group>
           
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={handleRefresh}
-            loading={loading}
-          >
-            Refresh
-          </Button>
+          <Link to="/select-repositories">
+            <Button icon={<SettingOutlined />}>Change Repository</Button>
+          </Link>
         </div>
-      </div>
-      
-      <div className="mt-2">
-        <Space size="small">
-          <Tag color="blue">{repository.language || 'Unknown'}</Tag>
-          <Tag>{repository.visibility || 'private'}</Tag>
-          {repository.isArchived && <Tag color="orange">Archived</Tag>}
-        </Space>
       </div>
     </div>
   );

@@ -1,34 +1,52 @@
 // components/layout/Navbar.js
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { DashboardOutlined, LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button, Dropdown, Layout, Menu } from 'antd';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Button, Dropdown, Avatar, Typography } from 'antd';
-import { 
-  DashboardOutlined, 
-  AppstoreOutlined, 
-  GithubOutlined,
-  UserOutlined,
-  LogoutOutlined 
-} from '@ant-design/icons';
-import { logout } from '../../store/slices/authSlice';
 
 const { Header } = Layout;
-const { Text } = Typography;
 
 const Navbar = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector(state => state.auth);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('github_token');
+        if (!token) return;
+
+        const response = await fetch('/api/auth/user', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleLogout = () => {
-    dispatch(logout());
+    localStorage.removeItem('github_token');
     navigate('/');
+    window.location.reload();
   };
 
   const userMenu = (
     <Menu>
-      <Menu.Item key="profile" icon={<UserOutlined />} disabled>
-        Profile
+      <Menu.Item key="dashboard" icon={<DashboardOutlined />}>
+        <Link to="/dashboard">Dashboard</Link>
+      </Menu.Item>
+      <Menu.Item key="repositories" icon={<SettingOutlined />}>
+        <Link to="/select-repositories">Repositories</Link>
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
@@ -38,38 +56,30 @@ const Navbar = () => {
   );
 
   return (
-    <Header className="bg-white shadow-md flex items-center justify-between px-6 h-16">
+    <Header className="bg-white border-b flex justify-between items-center px-4 h-16">
       <div className="flex items-center">
-        <Link to="/dashboard" className="flex items-center mr-8">
-          <GithubOutlined className="text-2xl mr-2" />
-          <Text strong className="text-lg hidden md:inline">GitHub Dashboard</Text>
+        <Link to="/dashboard" className="text-xl font-bold text-blue-600">
+          GitHub Analytics
         </Link>
-        
-        <Menu mode="horizontal" className="border-0">
-          <Menu.Item key="dashboard" icon={<DashboardOutlined />}>
-            <Link to="/dashboard">Dashboard</Link>
-          </Menu.Item>
-          <Menu.Item key="repositories" icon={<AppstoreOutlined />}>
-            <Link to="/select-repositories">Repositories</Link>
-          </Menu.Item>
-        </Menu>
       </div>
       
-      <div className="flex items-center">
+      <div>
         {user ? (
-          <Dropdown overlay={userMenu} placement="bottomRight">
-            <Button type="text" className="flex items-center">
+          <Dropdown overlay={userMenu} trigger={['click']} placement="bottomRight">
+            <div className="flex items-center cursor-pointer">
               <Avatar 
                 src={user.avatarUrl} 
                 icon={<UserOutlined />} 
                 size="small" 
-                className="mr-2" 
+                className="mr-2"
               />
-              <span className="hidden md:inline">{user.login}</span>
-            </Button>
+              <span className="mr-1">{user.login}</span>
+            </div>
           </Dropdown>
         ) : (
-          <Button size="small" loading>Loading...</Button>
+          <Button type="primary" onClick={() => navigate('/')}>
+            Sign In
+          </Button>
         )}
       </div>
     </Header>

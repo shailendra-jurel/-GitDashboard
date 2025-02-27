@@ -1,92 +1,53 @@
-// components/auth/Login.js
 import { GithubOutlined } from '@ant-design/icons';
 import { Button, Card, Typography } from 'antd';
 import React, { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { fetchUserData } from '../../store/slices/authSlice';
 
 const { Title, Text } = Typography;
 
 const Login = ({ setIsAuthenticated }) => {
-  const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
-
+  
   useEffect(() => {
-    // Handle OAuth callback
-    const handleCallback = async () => {
-      const urlParams = new URLSearchParams(location.search);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        try {
-          const response = await fetch('http://localhost:5000/api/auth/callback', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ code })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('github_token', data.token);
-            setIsAuthenticated(true);
-            await dispatch(fetchUserData());
-            navigate('/select-repositories');
-          }
-        } catch (error) {
-          console.error('Auth callback error:', error);
-        }
-      }
-    };
-
-    if (location.pathname === '/auth/callback') {
-      handleCallback();
-    }
-  }, [location, dispatch, navigate, setIsAuthenticated]);
-
-  const handleLogin = () => {
-    const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    const scope = 'repo user';
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
     
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+    if (token && location.pathname === '/auth/callback') {
+      localStorage.setItem('github_token', token);
+      setIsAuthenticated(true);
+      navigate('/dashboard');
+    }
+  }, [location, navigate, setIsAuthenticated]);
+  
+  const handleLogin = () => {
+    window.location.href = '/api/auth/github';
   };
-
+  
   return (
-    <div className="flex items-center justify-center h-screen">
-      <Card className="w-full max-w-md p-8 shadow-lg rounded-lg">
-        <div className="text-center">
-          <GithubOutlined className="text-6xl mb-4" />
-          <Title level={2}>GitHub Repository Dashboard</Title>
-          <Text className="block mb-8">
-            Visualize your repository activity and team contributions
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+      <Card className="w-full max-w-lg p-10 shadow-xl rounded-lg border border-gray-200 bg-white">
+        <div className="text-center mb-8">
+          <GithubOutlined className="text-6xl text-gray-700 mb-4" />
+          <Title level={2} className="mb-2">GitHub Repository Analytics</Title>
+          <Text className="text-gray-500 block">
+            Sign in with GitHub to access insights about your repositories.
           </Text>
-          <Button 
-            type="primary" 
-            size="large" 
-            icon={<GithubOutlined />} 
-            onClick={handleLogin}
-            className="w-full h-12 flex items-center justify-center"
-          >
-            Login with GitHub
-          </Button>
         </div>
+        
+        <Button
+          type="primary"
+          icon={<GithubOutlined />}
+          size="large"
+          onClick={handleLogin}
+          block
+          className="h-14 text-lg font-semibold flex items-center justify-center"
+        >
+          Sign in with GitHub
+        </Button>
       </Card>
     </div>
   );
 };
 
 export default Login;
-
-// // components/common/PrivateRoute.js
-// import React from 'react';
-// import { Navigate } from 'react-router-dom';
-
-// const PrivateRoute = ({ children, isAuthenticated }) => {
-//   return isAuthenticated ? children : <Navigate to="/" />;
-// };
-
-// export default PrivateRoute;

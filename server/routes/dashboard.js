@@ -395,4 +395,37 @@ router.get('/:owner/:repo/contributor/:username', async (req, res) => {
   }
 });
 
+// Get repository contributors
+router.get('/:owner/:repo/contributors', async (req, res) => {
+  try {
+    const { githubToken } = req.user;
+    const { owner, repo } = req.params;
+    
+    // Fetch contributors from GitHub API
+    const contributorsResponse = await axios.get(
+      `https://api.github.com/repos/${owner}/${repo}/contributors`,
+      {
+        headers: {
+          Authorization: `token ${githubToken}`
+        },
+        params: {
+          per_page: 100
+        }
+      }
+    );
+    
+    const contributors = contributorsResponse.data.map(contributor => ({
+      id: contributor.id,
+      login: contributor.login,
+      avatarUrl: contributor.avatar_url,
+      contributions: contributor.contributions
+    }));
+    
+    res.json(contributors);
+  } catch (error) {
+    console.error('Error fetching contributors:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch contributors' });
+  }
+});
+
 module.exports = router;

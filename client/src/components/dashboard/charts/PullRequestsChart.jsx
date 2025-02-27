@@ -1,106 +1,85 @@
-// components/dashboard/charts/PullRequestsChart.js
+import { Card, Empty } from 'antd';
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Card, Typography, Empty, Spin } from 'antd';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
-
-const { Title } = Typography;
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const PullRequestsChart = () => {
-  const { metrics, contributors, selectedContributors, loading } = useSelector(state => state.dashboard);
+  const { metrics, selectedContributors } = useSelector(state => state.dashboard);
   
-  // Get the team data
-  const teamData = metrics.prMerged || [];
-  
-  // Get data for selected contributors
-  const contributorsData = {};
-  if (selectedContributors.length > 0 && metrics.contributorPRs) {
-    selectedContributors.forEach(contributorId => {
-      const contributor = contributors.find(c => c.id === contributorId);
-      if (contributor && metrics.contributorPRs[contributorId]) {
-        contributorsData[contributorId] = {
-          name: contributor.login,
-          data: metrics.contributorPRs[contributorId]
-        };
-      }
-    });
+  if (!metrics.prMerged || metrics.prMerged.length === 0) {
+    return (
+      <Card title="Pull Request Activity" className="h-full">
+        <div className="h-64 flex items-center justify-center">
+          <Empty description="No pull request data available" />
+        </div>
+      </Card>
+    );
   }
-  
-  // Generate random colors for contributors
-  const getContributorColor = (index) => {
-    const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
-    return colors[index % colors.length];
+
+  // Filter data if contributors are selected
+  const chartData = metrics.prMerged.map(item => {
+    const filteredData = { ...item };
+    
+    if (selectedContributors.length > 0) {
+      // Only keep the selected contributors' data
+      Object.keys(filteredData).forEach(key => {
+        // Skip date/time fields
+        if (key !== 'date' && key !== 'timestamp' && key !== 'value') {
+          if (!selectedContributors.includes(key)) {
+            delete filteredData[key];
+          }
+        }
+      });
+    }
+    
+    return filteredData;
+  });
+
+  // Determine colors for different contributors
+  const contributorColors = {
+    value: '#1890ff', // Default color for total
   };
 
-  if (loading) {
-    return (
-      <Card className="h-full">
-        <div className="flex items-center justify-center h-64">
-          <Spin />
-        </div>
-      </Card>
-    );
-  }
+  // Get all contributors from the data
+  const contributors = Object.keys(chartData[0] || {}).filter(key => 
+    key !== 'date' && key !== 'timestamp' && key !== 'value'
+  );
 
-  if (!teamData || teamData.length === 0) {
-    return (
-      <Card className="h-full">
-        <Title level={4}>Pull Requests Merged</Title>
-        <div className="flex items-center justify-center h-64">
-          <Empty description="No data available" />
-        </div>
-      </Card>
-    );
-  }
+  // Generate colors for each contributor
+  const colorPalette = ['#1890ff', '#13c2c2', '#52c41a', '#faad14', '#722ed1', '#eb2f96'];
+  contributors.forEach((contributor, index) => {
+    contributorColors[contributor] = colorPalette[index % colorPalette.length];
+  });
 
   return (
-    <Card className="h-full">
-      <Title level={4}>Pull Requests Merged</Title>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={teamData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="value"
-              name="Team"
-              stroke="#8884d8"
-              activeDot={{ r: 8 }}
-              strokeWidth={2}
-            />
-            
-            {/* Render lines for selected contributors */}
-            {Object.entries(contributorsData).map(([id, contributor], index) => (
-              <Line
-                key={id}
-                type="monotone"
-                data={contributor.data}
-                dataKey="value"
-                name={contributor.name}
-                stroke={getContributorColor(index)}
-                strokeWidth={2}
-                dot={{ r: 3 }}
+    <Card title="Pull Request Activity" className="h-full">
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          
+          {/* If no specific contributors selected, show total */}
+          {(selectedContributors.length === 0) && (
+            <Bar dataKey="value" name="Total PRs" fill="#1890ff" />
+          )}
+          
+          {/* Otherwise show individual contributors */}
+          {selectedContributors.length > 0 && contributors
+            .filter(contributor => selectedContributors.includes(contributor))
+            .map((contributor, index) => (
+              <Bar 
+                key={contributor}
+                dataKey={contributor}
+                name={contributor}
+                fill={contributorColors[contributor]}
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+            ))
+          }
+        </BarChart>
+      </ResponsiveContainer>
     </Card>
   );
 };

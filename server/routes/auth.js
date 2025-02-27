@@ -5,21 +5,22 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const router = express.Router();
 
-// Direct GitHub OAuth route
+// GitHub OAuth login route
 router.get('/github', passport.authenticate('github', { scope: ['user', 'repo'] }));
 
-// GitHub OAuth callback
-router.get('/github/callback', passport.authenticate('github', { failureRedirect: '/' }), (req, res) => {
-    // Create JWT token
+// GitHub OAuth callback route
+router.get('/github/callback', 
+  passport.authenticate('github', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=auth_failed` }),
+  (req, res) => {
+    // Generate JWT token
     const token = jwt.sign(
       { id: req.user.id, username: req.user.username, githubToken: req.user.githubToken },
       process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
-      { expiresIn: '1d' }
+      { expiresIn: '24h' }
     );
     
     // Redirect to frontend with token
     res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`);
-    console.log('GitHub callback received');
   }
 );
 
@@ -83,9 +84,26 @@ router.post('/callback', async (req, res) => {
   }
 });
 
-// Verify token
-router.get('/verify', authenticateJWT, (req, res) => {
-  res.status(200).json({ valid: true, user: req.user });
+// Verify token endpoint
+router.get('/verify', (req, res) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  
+  const token = authHeader.split(' ')[1];
+  
+  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    res.json({ valid: true, user: {
+      id: decoded.id,
+      username: decoded.username
+    }});
+  });
 });
 
 // Get user data

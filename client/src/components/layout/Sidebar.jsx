@@ -1,10 +1,10 @@
 // components/layout/Sidebar.js
+import { BookOutlined } from '@ant-design/icons';
+import { Empty, Menu, Spin, Typography } from 'antd';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Menu, Typography, Spin, Empty } from 'antd';
-import { BookOutlined } from '@ant-design/icons';
+import { fetchContributors, fetchDashboardData } from '../../store/slices/dashboardSlice';
 import { setCurrentRepository } from '../../store/slices/repositorySlice';
-import { fetchDashboardData, fetchContributors } from '../../store/slices/dashboardSlice';
 
 const { Text } = Typography;
 
@@ -38,6 +38,17 @@ const Sidebar = () => {
     );
   }
 
+  const menuItems = selected.map(repo => ({
+    key: repo.id.toString(),
+    icon: <BookOutlined />,
+    label: (
+      <div className="truncate" title={repo.name}>
+        {repo.name}
+      </div>
+    ),
+    onClick: () => handleRepositorySelect(repo)
+  }));
+
   return (
     <div className="border-r h-full py-4">
       <div className="px-4 mb-4">
@@ -49,19 +60,8 @@ const Sidebar = () => {
         mode="inline"
         selectedKeys={[currentRepository?.id.toString()]}
         className="border-r-0"
-      >
-        {selected.map(repo => (
-          <Menu.Item 
-            key={repo.id.toString()} 
-            icon={<BookOutlined />}
-            onClick={() => handleRepositorySelect(repo)}
-          >
-            <div className="truncate" title={repo.name}>
-              {repo.name}
-            </div>
-          </Menu.Item>
-        ))}
-      </Menu>
+        items={menuItems}
+      />
     </div>
   );
 };

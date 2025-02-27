@@ -1,92 +1,82 @@
-// components/dashboard/ContributorsList.js
+import { ClearOutlined, FilterOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button, Card, Empty, List, Tag } from 'antd';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Card, List, Avatar, Button, Typography, Tooltip, Badge } from 'antd';
-import { EyeOutlined, EyeInvisibleOutlined, UserOutlined } from '@ant-design/icons';
-import { toggleContributor, clearSelectedContributors } from '../../store/slices/dashboardSlice';
-
-const { Title, Text } = Typography;
+import { clearSelectedContributors, toggleContributor } from '../../store/slices/dashboardSlice';
 
 const ContributorsList = () => {
   const dispatch = useDispatch();
-  const { contributors, selectedContributors, loading } = useSelector(state => state.dashboard);
+  const { contributors, selectedContributors } = useSelector(state => state.dashboard);
 
-  const handleToggleContributor = (contributorId) => {
-    dispatch(toggleContributor(contributorId));
+  const handleToggleContributor = (contributor) => {
+    dispatch(toggleContributor(contributor.login));
   };
 
-  const handleClearSelection = () => {
+  const handleClearFilters = () => {
     dispatch(clearSelectedContributors());
   };
 
+  if (!contributors || contributors.length === 0) {
+    return (
+      <Card 
+        title="Contributors" 
+        className="mb-6"
+        extra={
+          <Button icon={<FilterOutlined />} disabled>
+            Filter Charts
+          </Button>
+        }
+      >
+        <Empty description="No contributor data available" />
+      </Card>
+    );
+  }
+
   return (
     <Card 
-      title={
-        <div className="flex justify-between items-center">
-          <Title level={4} className="m-0">Contributors</Title>
-          {selectedContributors.length > 0 && (
-            <Button size="small" onClick={handleClearSelection}>
-              Clear Selection
-            </Button>
-          )}
-        </div>
-      }
+      title="Contributors" 
       className="mb-6"
+      extra={
+        selectedContributors.length > 0 ? (
+          <Button 
+            icon={<ClearOutlined />} 
+            onClick={handleClearFilters}
+          >
+            Clear Filters
+          </Button>
+        ) : (
+          <span className="text-gray-500">
+            <FilterOutlined className="mr-2" />
+            Select contributors to filter charts
+          </span>
+        )
+      }
     >
       <List
-        loading={loading}
+        grid={{ gutter: 16, column: 4, xs: 1, sm: 2, md: 3, lg: 4 }}
         dataSource={contributors}
         renderItem={contributor => (
-          <List.Item
-            key={contributor.id}
-            className={selectedContributors.includes(contributor.id) ? 'bg-blue-50' : ''}
-          >
-            <List.Item.Meta
-              avatar={
-                <Avatar src={contributor.avatarUrl}>
-                  {!contributor.avatarUrl && <UserOutlined />}
-                </Avatar>
-              }
-              title={
-                <div className="flex items-center">
-                  <a 
-                    href={contributor.htmlUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="mr-2"
-                  >
-                    {contributor.login}
-                  </a>
-                  {contributor.name && (
-                    <Text type="secondary" className="text-sm">
-                      ({contributor.name})
-                    </Text>
-                  )}
-                </div>
-              }
-              description={
+          <List.Item>
+            <div 
+              className={`
+                border rounded-lg p-4 transition-all cursor-pointer
+                ${selectedContributors.includes(contributor.login) ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-300'}
+              `}
+              onClick={() => handleToggleContributor(contributor)}
+            >
+              <div className="flex items-center">
+                <Avatar 
+                  src={contributor.avatar_url} 
+                  icon={<UserOutlined />}
+                  size="large"
+                  className="mr-3"
+                />
                 <div>
-                  <Badge 
-                    count={contributor.contributions} 
-                    style={{ backgroundColor: '#108ee9' }}
-                    showZero
-                    className="mr-2"
-                  />
-                  <Text type="secondary" className="text-xs">
-                    contributions
-                  </Text>
+                  <div className="font-medium">{contributor.login}</div>
+                  <Tag color="blue">{contributor.contributions} commits</Tag>
                 </div>
-              }
-            />
-            <Tooltip title={selectedContributors.includes(contributor.id) ? "Hide contributions" : "Show contributions"}>
-              <Button
-                type={selectedContributors.includes(contributor.id) ? "primary" : "default"}
-                shape="circle"
-                icon={selectedContributors.includes(contributor.id) ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-                onClick={() => handleToggleContributor(contributor.id)}
-                size="small"
-              />
-            </Tooltip>
+              </div>
+            </div>
           </List.Item>
         )}
       />

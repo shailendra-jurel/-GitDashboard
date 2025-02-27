@@ -1,50 +1,80 @@
-// components/dashboard/MetricsOverview.js
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Row, Col, Card, Statistic } from 'antd';
+import { Card, Statistic, Row, Col } from 'antd';
 import { 
   PullRequestOutlined, 
+  CheckCircleOutlined, 
   ClockCircleOutlined, 
-  BranchesOutlined,
+  BranchesOutlined, 
   UserOutlined 
 } from '@ant-design/icons';
 
 const MetricsOverview = () => {
-  const { metrics } = useSelector(state => state.dashboard);
-  const { contributors } = useSelector(state => state.dashboard);
+  const { metrics, contributors } = useSelector(state => state.dashboard);
 
-  // Calculate metrics
-  const totalPRs = metrics.prMerged.reduce((sum, item) => sum + item.value, 0);
-  
-  // Average PR merge time in hours
-  const avgTimeToMerge = metrics.prTimeToMerge.length > 0
+  // Summary metrics (from old version)
+  const totalPRs = metrics?.summary?.totalPRs || 0;
+  const mergedPRs = metrics?.summary?.mergedPRs || 0;
+  const avgTimeToMergeHours = metrics?.summary?.avgTimeToMergeHours || 0;
+
+  // Detailed metrics (from updated version)
+  const totalMergedPRs = metrics?.prMerged?.reduce((sum, item) => sum + item.value, 0) || 0;
+
+  const avgTimeToMerge = metrics?.prTimeToMerge?.length
     ? metrics.prTimeToMerge.reduce((sum, item) => sum + item.value, 0) / metrics.prTimeToMerge.length
     : 0;
-  
-  // Total branch activity
-  const totalBranchActivity = metrics.branchActivity.reduce((sum, item) => sum + item.created + item.deleted, 0);
-  
-  // Total contributors
-  const totalContributors = contributors.length;
+
+  const totalBranchActivity = metrics?.branchActivity?.reduce(
+    (sum, item) => sum + item.created + item.deleted, 
+    0
+  ) || 0;
+
+  const totalContributors = contributors?.length || 0;
 
   return (
     <div className="mb-6">
       <Row gutter={[16, 16]}>
+        {/* Total Pull Requests */}
         <Col xs={24} sm={12} md={6}>
           <Card className="h-full">
             <Statistic
-              title="Pull Requests Merged"
+              title="Total Pull Requests"
               value={totalPRs}
               prefix={<PullRequestOutlined />}
+            />
+          </Card>
+        </Col>
+
+        {/* Merged Pull Requests */}
+        <Col xs={24} sm={12} md={6}>
+          <Card className="h-full">
+            <Statistic
+              title="Merged Pull Requests"
+              value={mergedPRs}
+              prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#3f8600' }}
             />
           </Card>
         </Col>
-        
+
+        {/* Avg. Time to Merge (from summary) */}
         <Col xs={24} sm={12} md={6}>
           <Card className="h-full">
             <Statistic
               title="Avg. Time to Merge"
+              value={avgTimeToMergeHours.toFixed(1)}
+              suffix="hours"
+              prefix={<ClockCircleOutlined />}
+              precision={1}
+            />
+          </Card>
+        </Col>
+
+        {/* Avg. Time to Merge (calculated) */}
+        <Col xs={24} sm={12} md={6}>
+          <Card className="h-full">
+            <Statistic
+              title="Avg. Time to Merge (Detailed)"
               value={avgTimeToMerge.toFixed(1)}
               suffix="hours"
               prefix={<ClockCircleOutlined />}
@@ -52,7 +82,8 @@ const MetricsOverview = () => {
             />
           </Card>
         </Col>
-        
+
+        {/* Branch Activity */}
         <Col xs={24} sm={12} md={6}>
           <Card className="h-full">
             <Statistic
@@ -63,7 +94,8 @@ const MetricsOverview = () => {
             />
           </Card>
         </Col>
-        
+
+        {/* Contributors */}
         <Col xs={24} sm={12} md={6}>
           <Card className="h-full">
             <Statistic
@@ -80,4 +112,3 @@ const MetricsOverview = () => {
 };
 
 export default MetricsOverview;
-

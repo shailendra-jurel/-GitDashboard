@@ -1,106 +1,93 @@
-// components/dashboard/charts/TimeToMergeChart.js
+import { Card, Empty } from 'antd';
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { Card, Typography, Empty, Spin } from 'antd';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
-
-const { Title } = Typography;
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const TimeToMergeChart = () => {
-  const { metrics, contributors, selectedContributors, loading } = useSelector(state => state.dashboard);
+  const { metrics, selectedContributors } = useSelector(state => state.dashboard);
   
-  // Get the team data
-  const teamData = metrics.prTimeToMerge || [];
-  
-  // Get data for selected contributors
-  const contributorsData = {};
-  if (selectedContributors.length > 0 && metrics.contributorTimeToMerge) {
-    selectedContributors.forEach(contributorId => {
-      const contributor = contributors.find(c => c.id === contributorId);
-      if (contributor && metrics.contributorTimeToMerge[contributorId]) {
-        contributorsData[contributorId] = {
-          name: contributor.login,
-          data: metrics.contributorTimeToMerge[contributorId]
-        };
-      }
-    });
+  if (!metrics.prTimeToMerge || metrics.prTimeToMerge.length === 0) {
+    return (
+      <Card title="Time to Merge (Hours)" className="h-full">
+        <div className="h-64 flex items-center justify-center">
+          <Empty description="No time to merge data available" />
+        </div>
+      </Card>
+    );
   }
-  
-  // Generate random colors for contributors
-  const getContributorColor = (index) => {
-    const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
-    return colors[index % colors.length];
+
+  // Filter data if contributors are selected
+  const chartData = metrics.prTimeToMerge.map(item => {
+    const filteredData = { ...item };
+    
+    if (selectedContributors.length > 0) {
+      // Only keep the selected contributors' data
+      Object.keys(filteredData).forEach(key => {
+        // Skip date/time fields
+        if (key !== 'date' && key !== 'timestamp' && key !== 'value') {
+          if (!selectedContributors.includes(key)) {
+            delete filteredData[key];
+          }
+        }
+      });
+    }
+    
+    return filteredData;
+  });
+
+  // Determine colors for different contributors
+  const contributorColors = {
+    value: '#13c2c2', // Default color for average
   };
 
-  if (loading) {
-    return (
-      <Card className="h-full">
-        <div className="flex items-center justify-center h-64">
-          <Spin />
-        </div>
-      </Card>
-    );
-  }
+  // Get all contributors from the data
+  const contributors = Object.keys(chartData[0] || {}).filter(key => 
+    key !== 'date' && key !== 'timestamp' && key !== 'value'
+  );
 
-  if (!teamData || teamData.length === 0) {
-    return (
-      <Card className="h-full">
-        <Title level={4}>Time to Merge (hours)</Title>
-        <div className="flex items-center justify-center h-64">
-          <Empty description="No data available" />
-        </div>
-      </Card>
-    );
-  }
+  // Generate colors for each contributor
+  const colorPalette = ['#13c2c2', '#1890ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96'];
+  contributors.forEach((contributor, index) => {
+    contributorColors[contributor] = colorPalette[index % colorPalette.length];
+  });
 
   return (
-    <Card className="h-full">
-      <Title level={4}>Time to Merge (hours)</Title>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={teamData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="value"
-              name="Team Average"
-              stroke="#82ca9d"
-              activeDot={{ r: 8 }}
-              strokeWidth={2}
+    <Card title="Time to Merge (Hours)" className="h-full">
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          
+          {/* If no specific contributors selected, show average */}
+          {(selectedContributors.length === 0) && (
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              name="Average" 
+              stroke="#13c2c2" 
+              activeDot={{ r: 8 }} 
             />
-            
-            {/* Render lines for selected contributors */}
-            {Object.entries(contributorsData).map(([id, contributor], index) => (
-              <Line
-                key={id}
+          )}
+          
+          {/* Otherwise show individual contributors */}
+          {selectedContributors.length > 0 && contributors
+            .filter(contributor => selectedContributors.includes(contributor))
+            .map((contributor, index) => (
+              <Line 
+                key={contributor}
                 type="monotone"
-                data={contributor.data}
-                dataKey="value"
-                name={contributor.name}
-                stroke={getContributorColor(index)}
-                strokeWidth={2}
-                dot={{ r: 3 }}
+                dataKey={contributor}
+                name={contributor}
+                stroke={contributorColors[contributor]}
+                activeDot={{ r: 6 }}
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+            ))
+          }
+        </LineChart>
+      </ResponsiveContainer>
     </Card>
   );
 };
