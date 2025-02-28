@@ -18,8 +18,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-vercel-app-name.vercel.app', 'https://your-custom-domain.com'] // Update with your actual Vercel domain
-    : 'http://localhost:5173',
+    ? ['https://git-dashboard-rho.vercel.app', 'https://git-dashboard-rho.vercel.app/'] // Update with your actual Vercel domain
+    : 'https://git-dashboard-rho.vercel.app/',
   credentials: true
 }));
 app.use(express.json());
@@ -40,7 +40,7 @@ app.use(passport.session());
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL:`${process.env.CLIENT_URL || 'http://localhost:5173'}/api/auth/github/callback` ,// Fixed callback URL to match route
+    callbackURL:`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/api/auth/github/callback` ,// Fixed callback URL to match route
     
     scope: ['user', 'repo']
   },

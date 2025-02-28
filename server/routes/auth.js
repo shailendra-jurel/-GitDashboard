@@ -11,7 +11,7 @@ router.get('/github', passport.authenticate('github', { scope: ['user', 'repo'] 
 // GitHub OAuth callback route
 router.get('/github/callback', 
   passport.authenticate('github', { 
-    failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=auth_failed`,
+    failureRedirect: `${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app/'}/login?error=auth_failed`,
     session: false
   }),
   (req, res) => {
@@ -28,10 +28,10 @@ router.get('/github/callback',
       );
       
       // Redirect to frontend with token
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`); 
+      res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app/'}/auth/callback?token=${token}`); 
     } catch (error) {
       console.error('Token generation error:', error);
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=token_generation_failed`);
+      res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app/'}/login?error=token_generation_failed`);
     }
   }
 );
