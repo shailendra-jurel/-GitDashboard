@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { Provider } from 'react-redux';
 import { ConfigProvider, Spin } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Provider } from 'react-redux';
+import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import apiService from './services/apiService';
 import store from './store';
 
 // Components
 import Login from './components/auth/Login';
 import Dashboard from './components/dashboard/Dashboard';
-import RepositorySelection from './components/repositories/RepositorySelection';
 import Navbar from './components/layout/Navbar';
+import RepositorySelection from './components/repositories/RepositorySelection';
 
 // Styles
-import './App.css';
 import 'antd/dist/reset.css';
+import './App.css';
 
 const PrivateRoute = ({ isAuthenticated }) => {
   return isAuthenticated ? <Outlet /> : <Navigate to="/" />;
@@ -32,20 +33,10 @@ const App = () => {
           return;
         }
         
-        const response = await fetch('/api/auth/verify', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.valid) {
-            setIsAuthenticated(true);
-          } else {
-            localStorage.removeItem('github_token');
-            setIsAuthenticated(false);
-          }
+        // Use the API service for verification
+        const data = await apiService.get('/auth/verify');
+        if (data && data.valid) {
+          setIsAuthenticated(true);
         } else {
           localStorage.removeItem('github_token');
           setIsAuthenticated(false);

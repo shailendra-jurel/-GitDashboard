@@ -1,22 +1,11 @@
-// store/slices/repositorySlice.js
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import apiService from '../../services/apiService';
 
 export const fetchRepositories = createAsyncThunk(
   'repositories/fetchRepositories',
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('github_token');
-      const response = await fetch('/api/repositories', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch repositories');
-      }
-      
-      return await response.json();
+      return await apiService.get('/repositories');
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -27,21 +16,7 @@ export const saveSelectedRepositories = createAsyncThunk(
   'repositories/saveSelected',
   async (selectedRepos, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('github_token');
-      const response = await fetch('/api/repositories/selected', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ repositories: selectedRepos })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save selected repositories');
-      }
-      
-      return await response.json();
+      return await apiService.post('/repositories/selected', { repositories: selectedRepos });
     } catch (error) {
       return rejectWithValue(error.message);
     }

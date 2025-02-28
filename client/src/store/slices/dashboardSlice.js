@@ -1,5 +1,6 @@
 // store/slices/dashboardSlice.js
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import apiService from '../../services/apiService';
 
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchData',
@@ -9,19 +10,8 @@ export const fetchDashboardData = createAsyncThunk(
       if (!owner || !repo) {
         return rejectWithValue('Repository information is missing');
       }
-      const token = localStorage.getItem('github_token');
-      const response = await fetch(`/api/dashboard/${owner}/${repo}/metrics?timeRange=${timeRange}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        return rejectWithValue(errorData.error || `Error: ${response.status}`);
-      }
-      
-      return await response.json();
+      return await apiService.get(`/dashboard/${owner}/${repo}/metrics?timeRange=${timeRange}`);
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch dashboard data');
     }
@@ -32,24 +22,11 @@ export const fetchContributors = createAsyncThunk(
   'dashboard/fetchContributors',
   async ({ owner, repo }, { rejectWithValue }) => {
     try {
-
       if (!owner || !repo) {
         return rejectWithValue('Repository owner or name is missing');
       }
 
-      const token = localStorage.getItem('github_token');
-      const response = await fetch(`/api/dashboard/${owner}/${repo}/contributors`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        return rejectWithValue(errorData.error || `Error: ${response.status}`);
-      }
-      
-      return await response.json();
+      return await apiService.get(`/dashboard/${owner}/${repo}/contributors`);
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch contributors');
     }

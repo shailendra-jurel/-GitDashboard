@@ -1,5 +1,6 @@
 // store/slices/authSlice.js
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import apiService from '../../services/apiService';
 
 export const fetchUserData = createAsyncThunk(
   'auth/fetchUserData',
@@ -11,18 +12,7 @@ export const fetchUserData = createAsyncThunk(
         return rejectWithValue('No authentication token found');
       }
       
-      const response = await fetch('/api/auth/user', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch user data');
-      }
-      
-      return await response.json();
+      return await apiService.get('/auth/user');
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -36,17 +26,7 @@ export const logoutUser = createAsyncThunk(
       const token = localStorage.getItem('github_token');
       
       if (token) {
-        const response = await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Logout failed');
-        }
+        await apiService.post('/auth/logout', {});
       }
       
       localStorage.removeItem('github_token');
