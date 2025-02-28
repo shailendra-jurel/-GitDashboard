@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Your Vite development server
+  origin: process.env.CLIENT_URL || 'http://localhost:5173', // Your Vite development server
   credentials: true
 }));
 app.use(express.json());
@@ -38,20 +38,24 @@ app.use(passport.session());
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback`,
+    callbackURL:"http://localhost:5173/api/auth/github/callback" ,// Fixed callback URL to match route
     scope: ['user', 'repo']
   },
   async (accessToken, refreshToken, profile, done) => {
-    // Store GitHub access token with the user profile
-    const user = {
-      id: profile.id,
-      username: profile.username,
-      displayName: profile.displayName,
-      avatarUrl: profile._json.avatar_url,
-      githubToken: accessToken
-    };
-    
-    return done(null, user);
+    try {
+      // Store GitHub access token with the user profile
+      const user = {
+        id: profile.id,
+        username: profile.username,
+        displayName: profile.displayName || profile.username,
+        avatarUrl: profile._json.avatar_url,
+        githubToken: accessToken
+      };
+      
+      return done(null, user);
+    } catch (error) {
+      return done(error, null);
+    }
   }
 ));
 
@@ -68,20 +72,25 @@ passport.deserializeUser((user, done) => {
 const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-
-    jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
-      if (err) {
-        return res.sendStatus(403);
-      }
-
-      req.user = user;
-      next();
-    });
-  } else {
-    res.sendStatus(401);
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Authorization header required' });
   }
+
+  const token = authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Bearer token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
+    if (err) {
+      console.error('JWT verification error:', err.message);
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    req.user = user;
+    next();
+  });
 };
 
 // Import routes
@@ -102,6 +111,12 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   });
 }
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err.stack);
+  res.status(500).json({ error: 'Server error occurred' });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

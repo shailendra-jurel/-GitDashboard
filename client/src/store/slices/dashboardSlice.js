@@ -32,6 +32,11 @@ export const fetchContributors = createAsyncThunk(
   'dashboard/fetchContributors',
   async ({ owner, repo }, { rejectWithValue }) => {
     try {
+
+      if (!owner || !repo) {
+        return rejectWithValue('Repository owner or name is missing');
+      }
+
       const token = localStorage.getItem('github_token');
       const response = await fetch(`/api/dashboard/${owner}/${repo}/contributors`, {
         headers: {
@@ -39,13 +44,14 @@ export const fetchContributors = createAsyncThunk(
         }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch contributors');
+     if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        return rejectWithValue(errorData.error || `Error: ${response.status}`);
       }
       
       return await response.json();
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Failed to fetch contributors');
     }
   }
 );

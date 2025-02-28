@@ -25,18 +25,34 @@ const Dashboard = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (currentRepository && currentRepository.owner && currentRepository.name) {
-      dispatch(fetchDashboardData({ 
-        owner: currentRepository.owner.login,
-        repo: currentRepository.name,
-        timeRange 
-      }));
-      dispatch(fetchContributors({ 
-        owner: currentRepository.owner.login,
-        repo: currentRepository.name 
-      }));
+    if (currentRepository) {
+      // Check for different possible structures of the repository object
+      const ownerName = currentRepository.owner?.login ||  currentRepository.owner?.name || (currentRepository.fullName && currentRepository.fullName.split('/')[0]);
+      
+      const repoName = currentRepository.name ||   (currentRepository.fullName && currentRepository.fullName.split('/')[1]);
+
+
+  console.log(`Fetching data for: ${currentRepository.owner.login}/${currentRepository.name}`);
+
+      
+      if (ownerName && repoName) {
+        dispatch(fetchDashboardData({ 
+          owner: ownerName,
+          repo: repoName,
+          timeRange 
+        }));
+        
+        dispatch(fetchContributors({ 
+          owner: ownerName,
+          repo: repoName 
+        }));
+      }
     }
   }, [dispatch, currentRepository, timeRange]);
+
+
+
+
 
   if (repoLoading && selected.length === 0) {
     return (

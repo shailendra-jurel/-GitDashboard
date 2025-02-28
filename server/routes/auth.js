@@ -10,22 +10,33 @@ router.get('/github', passport.authenticate('github', { scope: ['user', 'repo'] 
 
 // GitHub OAuth callback route
 router.get('/github/callback', 
-  passport.authenticate('github', { failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=auth_failed` }),
+  passport.authenticate('github', { 
+    failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=auth_failed`,
+    session: false
+  }),
   (req, res) => {
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: req.user.id, username: req.user.username, githubToken: req.user.githubToken },
-      process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
-      { expiresIn: '24h' }
-    );
-    
-    // Redirect to frontend with token
-    res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`);
+    try {
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          id: req.user.id, 
+          username: req.user.username, 
+          githubToken: req.user.githubToken 
+        },
+        process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
+        { expiresIn: '24h' }
+      );
+      
+      // Redirect to frontend with token
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`); 
+    } catch (error) {
+      console.error('Token generation error:', error);
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=token_generation_failed`);
+    }
   }
 );
 
-// Handle frontend OAuth flow with code :::
-//  this is helpful for the frontend to get the token and user data with the code so that the frontend can store the token in local storage and use it for future requests
+// Handle frontend OAuth flow with code
 router.post('/callback', async (req, res) => {
   const { code } = req.body;
   
@@ -66,7 +77,7 @@ router.post('/callback', async (req, res) => {
       id: userResponse.data.id,
       login: userResponse.data.login,
       avatarUrl: userResponse.data.avatar_url,
-      name: userResponse.data.name,
+      name: userResponse.data.name || userResponse.data.login,
       githubToken: access_token
     };
     
@@ -94,15 +105,23 @@ router.get('/verify', (req, res) => {
   
   const token = authHeader.split(' ')[1];
   
+  if (!token) {
+    return res.status(401).json({ error: 'Bearer token required' });
+  }
+  
   jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, decoded) => {
     if (err) {
+      console.error('Token verification error:', err.message);
       return res.status(401).json({ error: 'Invalid token' });
     }
     
-    res.json({ valid: true, user: {
-      id: decoded.id,
-      username: decoded.username
-    }});
+    res.json({ 
+      valid: true, 
+      user: {
+        id: decoded.id,
+        username: decoded.username || decoded.login
+      }
+    });
   });
 });
 
@@ -110,6 +129,10 @@ router.get('/verify', (req, res) => {
 router.get('/user', authenticateJWT, async (req, res) => {
   try {
     const { githubToken } = req.user;
+    
+    if (!githubToken) {
+      return res.status(400).json({ error: 'GitHub token not found' });
+    }
     
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
@@ -120,7 +143,7 @@ router.get('/user', authenticateJWT, async (req, res) => {
     const userData = {
       id: userResponse.data.id,
       login: userResponse.data.login,
-      name: userResponse.data.name,
+      name: userResponse.data.name || userResponse.data.login,
       avatarUrl: userResponse.data.avatar_url,
       htmlUrl: userResponse.data.html_url,
       email: userResponse.data.email
@@ -128,35 +151,48 @@ router.get('/user', authenticateJWT, async (req, res) => {
     
     res.json(userData);
   } catch (error) {
-    console.error('Error fetching user data:', error);
+    console.error('Error fetching user data:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to fetch user data' });
   }
 });
 
 // Logout route
 router.post('/logout', (req, res) => {
-  req.logout();
-  res.json({ success: true });
+  if (req.logout) {
+    req.logout(function(err) {
+      if (err) {
+        return res.status(500).json({ error: 'Logout failed', details: err.message });
+      }
+      res.json({ success: true });
+    });
+  } else {
+    res.json({ success: true });
+  }
 });
 
 // Middleware function to authenticate JWT token
 function authenticateJWT(req, res, next) {
   const authHeader = req.headers.authorization;
 
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-
-    jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
-      if (err) {
-        return res.status(403).json({ error: 'Invalid or expired token' });
-      }
-
-      req.user = user;
-      next();
-    });
-  } else {
-    res.status(401).json({ error: 'Authorization header required' });
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Authorization header required' });
   }
+
+  const token = authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Bearer token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
+    if (err) {
+      console.error('JWT verification error:', err.message);
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    req.user = user;
+    next();
+  });
 }
 
 module.exports = router;

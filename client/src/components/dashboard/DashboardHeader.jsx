@@ -11,6 +11,11 @@ const DashboardHeader = ({ repository }) => {
   const dispatch = useDispatch();
   const { timeRange, loading } = useSelector(state => state.dashboard);
 
+  // Ensure repository has required properties
+  if (!repository || !repository.owner || !repository.name) {
+    return null;
+  }
+
   const handleTimeRangeChange = (e) => {
     const newTimeRange = e.target.value;
     dispatch(setTimeRange(newTimeRange));
@@ -50,20 +55,28 @@ const DashboardHeader = ({ repository }) => {
           {repository.name}
         </Title>
         
-        <div className="flex items-center">
-            <Radio.Group 
-                  value={timeRange} 
-                  onChange={handleTimeRangeChange}
-                  buttonStyle="solid"
-                  className="mr-4"
-             >
+        <div className="flex items-center flex-wrap">
+          <Radio.Group 
+            value={timeRange} 
+            onChange={handleTimeRangeChange}
+            buttonStyle="solid"
+            className="mr-4 mb-2"
+          >
             <Radio.Button value="1w">7 Days</Radio.Button>
             <Radio.Button value="1m">30 Days</Radio.Button>
             <Radio.Button value="3m">3 Months</Radio.Button>
             <Radio.Button value="1y">1 Year</Radio.Button>
           </Radio.Group>
           
-          <Link to="/select-repositories">
+          <Button 
+            icon={<SettingOutlined />} 
+            onClick={handleRefresh} 
+            className="mr-2 mb-2"
+          >
+            Refresh
+          </Button>
+          
+          <Link to="/select-repositories" className="mb-2">
             <Button icon={<SettingOutlined />}>Change Repository</Button>
           </Link>
         </div>

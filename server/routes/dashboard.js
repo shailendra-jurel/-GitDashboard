@@ -400,6 +400,15 @@ router.get('/:owner/:repo/contributors', async (req, res) => {
   try {
     const { githubToken } = req.user;
     const { owner, repo } = req.params;
+
+        // Validation
+        if (!owner || !repo) {
+          return res.status(400).json({ error: 'Repository owner and name are required' });
+        }
+        
+        // Debug log
+        console.log(`Fetching contributors for ${owner}/${repo}`);
+      
     
     // Fetch contributors from GitHub API
     const contributorsResponse = await axios.get(
@@ -423,8 +432,18 @@ router.get('/:owner/:repo/contributors', async (req, res) => {
     
     res.json(contributors);
   } catch (error) {
-    console.error('Error fetching contributors:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch contributors' });
+    console.error('Error fetching contributors:', 
+      error.response?.status,
+      error.response?.data || error.message);
+    
+    // More specific error response
+    if (error.response && error.response.status === 404) {
+      return res.status(404).json({ error: 'Repository not found' });
+    }
+    res.status(500).json({ 
+      error: 'Failed to fetch contributors',
+      details: error.message 
+    });
   }
 });
 
