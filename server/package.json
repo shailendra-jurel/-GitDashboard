@@ -4,7 +4,9 @@
   "description": "git , github , visualisation , repostiories , pr and work together , team",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+
   },
   "keywords": [
     "git",
