@@ -18,16 +18,18 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://git-dashboard-rho.vercel.app', 'http://localhost:5173/'] // Update with your actual Vercel domain
-    : 'http://localhost:5173/',
-  credentials: true
+    ? process.env.CLIENT_URL
+    : 'https://git-dashboard-rho.vercel.app/',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session config
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'github-dashboard-secret',
+  secret: process.env.SESSION_SECRET || 'your-session-secret-key',
   resave: false,
   saveUninitialized: false
 }));
@@ -40,8 +42,9 @@ app.use(passport.session());
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL:`${process.env.CLIENT_URL || 'http://localhost:5173'}/api/auth/github/callback` ,// Fixed callback URL to match route
-    
+    callbackURL: `${process.env.NODE_ENV === 'production' 
+      ? 'https://git-dashboard-rho.vercel.app'  // Update this with your production domain
+      : 'https://git-dashboard-rho.vercel.app'}/api/auth/github/callback`,
     scope: ['user', 'repo']
   },
   async (accessToken, refreshToken, profile, done) => {
@@ -85,7 +88,7 @@ const authenticateJWT = (req, res, next) => {
     return res.status(401).json({ error: 'Bearer token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key', (err, user) => {
     if (err) {
       console.error('JWT verification error:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });

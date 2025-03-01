@@ -21,20 +21,21 @@ const Dashboard = () => {
   const { loading: dashboardLoading, error, timeRange } = useSelector(state => state.dashboard);
 
   useEffect(() => {
-    dispatch(fetchRepositories());
-  }, [dispatch]);
+    // Only fetch if no repositories are loaded
+    if (!selected.length) {
+      dispatch(fetchRepositories());
+    }
+  }, [dispatch, selected.length]);
 
   useEffect(() => {
     if (currentRepository) {
-      // Check for different possible structures of the repository object
-      const ownerName = currentRepository.owner?.login ||  currentRepository.owner?.name || (currentRepository.fullName && currentRepository.fullName.split('/')[0]);
+      const ownerName = currentRepository.owner?.login || 
+                       currentRepository.owner?.name || 
+                       (currentRepository.fullName && currentRepository.fullName.split('/')[0]);
       
-      const repoName = currentRepository.name ||   (currentRepository.fullName && currentRepository.fullName.split('/')[1]);
+      const repoName = currentRepository.name || 
+                      (currentRepository.fullName && currentRepository.fullName.split('/')[1]);
 
-
-  console.log(`Fetching data for: ${currentRepository.owner.login}/${currentRepository.name}`);
-
-      
       if (ownerName && repoName) {
         dispatch(fetchDashboardData({ 
           owner: ownerName,
@@ -49,10 +50,6 @@ const Dashboard = () => {
       }
     }
   }, [dispatch, currentRepository, timeRange]);
-
-
-
-
 
   if (repoLoading && selected.length === 0) {
     return (

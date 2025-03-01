@@ -11,7 +11,7 @@ router.get('/github', passport.authenticate('github', { scope: ['user', 'repo'] 
 // GitHub OAuth callback route
 router.get('/github/callback', 
   passport.authenticate('github', { 
-    failureRedirect: `${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=auth_failed`,
+    failureRedirect: `${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/login?error=auth_failed`,
     session: false
   }),
   (req, res) => {
@@ -28,10 +28,10 @@ router.get('/github/callback',
       );
       
       // Redirect to frontend with token
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}`); 
+      res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/auth/callback?token=${token}`); 
     } catch (error) {
       console.error('Token generation error:', error);
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/login?error=token_generation_failed`);
+      res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/login?error=token_generation_failed`);
     }
   }
 );
@@ -84,7 +84,7 @@ router.post('/callback', async (req, res) => {
     // Create JWT token
     const token = jwt.sign(
       { id: user.id, login: user.login, githubToken: access_token },
-      process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
+      process.env.JWT_SECRET || 'your-jwt-secret-key',
       { expiresIn: '1d' }
     );
     
@@ -109,7 +109,7 @@ router.get('/verify', (req, res) => {
     return res.status(401).json({ error: 'Bearer token required' });
   }
   
-  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key', (err, decoded) => {
     if (err) {
       console.error('Token verification error:', err.message);
       return res.status(401).json({ error: 'Invalid token' });
@@ -184,7 +184,7 @@ function authenticateJWT(req, res, next) {
     return res.status(401).json({ error: 'Bearer token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key', (err, user) => {
     if (err) {
       console.error('JWT verification error:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
