@@ -17,9 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CLIENT_URL
-    : 'https://git-dashboard-rho.vercel.app/',
+  origin: process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -42,9 +40,7 @@ app.use(passport.session());
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${process.env.NODE_ENV === 'production' 
-      ? 'https://git-dashboard-rho.vercel.app'  // Update this with your production domain
-      : 'https://git-dashboard-rho.vercel.app'}/api/auth/github/callback`,
+    callbackURL: process.env.GITHUB_CALLBACK_URL || 'https://gitdashboard.onrender.com/api/auth/github/callback',
     scope: ['user', 'repo']
   },
   async (accessToken, refreshToken, profile, done) => {

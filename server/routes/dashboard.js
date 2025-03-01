@@ -42,7 +42,7 @@ const getTimeRange = (filter) => {
 // Get repository metrics
 router.get('/:owner/:repo/metrics', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     const { owner, repo } = req.params;
     const { timeRange = '3m' } = req.query;
     
@@ -53,7 +53,7 @@ router.get('/:owner/:repo/metrics', async (req, res) => {
       `https://api.github.com/repos/${owner}/${repo}/pulls`,
       {
         headers: {
-          Authorization: `token ${githubToken}`
+          Authorization: `token ${github_token}`
         },
         params: {
           state: 'all',
@@ -70,7 +70,7 @@ router.get('/:owner/:repo/metrics', async (req, res) => {
       'https://api.github.com/search/issues',
       {
         headers: {
-          Authorization: `token ${githubToken}`,
+          Authorization: `token ${github_token}`,
           Accept: 'application/vnd.github.v3+json'
         },
         params: {
@@ -88,7 +88,7 @@ router.get('/:owner/:repo/metrics', async (req, res) => {
           pr.pull_request.url,
           {
             headers: {
-              Authorization: `token ${githubToken}`
+              Authorization: `token ${github_token}`
             }
           }
         );
@@ -197,7 +197,7 @@ router.get('/:owner/:repo/metrics', async (req, res) => {
 // Get branch activity
 router.get('/:owner/:repo/branch-activity', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     const { owner, repo } = req.params;
     
     // Fetch branches
@@ -205,7 +205,7 @@ router.get('/:owner/:repo/branch-activity', async (req, res) => {
       `https://api.github.com/repos/${owner}/${repo}/branches`,
       {
         headers: {
-          Authorization: `token ${githubToken}`
+          Authorization: `token ${github_token}`
         },
         params: {
           per_page: 100
@@ -220,7 +220,7 @@ router.get('/:owner/:repo/branch-activity', async (req, res) => {
       `https://api.github.com/repos/${owner}/${repo}/commits`,
       {
         headers: {
-          Authorization: `token ${githubToken}`
+          Authorization: `token ${github_token}`
         },
         params: {
           per_page: 100
@@ -260,7 +260,7 @@ router.get('/:owner/:repo/branch-activity', async (req, res) => {
 // Get individual contributor metrics
 router.get('/:owner/:repo/contributor/:username', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     const { owner, repo, username } = req.params;
     const { timeRange = '3m' } = req.query;
     
@@ -272,7 +272,7 @@ router.get('/:owner/:repo/contributor/:username', async (req, res) => {
       'https://api.github.com/search/issues',
       {
         headers: {
-          Authorization: `token ${githubToken}`,
+          Authorization: `token ${github_token}`,
           Accept: 'application/vnd.github.v3+json'
         },
         params: {
@@ -288,7 +288,7 @@ router.get('/:owner/:repo/contributor/:username', async (req, res) => {
       'https://api.github.com/search/issues',
       {
         headers: {
-          Authorization: `token ${githubToken}`,
+          Authorization: `token ${github_token}`,
           Accept: 'application/vnd.github.v3+json'
         },
         params: {
@@ -304,7 +304,7 @@ router.get('/:owner/:repo/contributor/:username', async (req, res) => {
       'https://api.github.com/search/issues',
       {
         headers: {
-          Authorization: `token ${githubToken}`,
+          Authorization: `token ${github_token}`,
           Accept: 'application/vnd.github.v3+json'
         },
         params: {
@@ -398,7 +398,7 @@ router.get('/:owner/:repo/contributor/:username', async (req, res) => {
 // Get repository contributors
 router.get('/:owner/:repo/contributors', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     const { owner, repo } = req.params;
 
         // Validation
@@ -415,7 +415,7 @@ router.get('/:owner/:repo/contributors', async (req, res) => {
       `https://api.github.com/repos/${owner}/${repo}/contributors`,
       {
         headers: {
-          Authorization: `token ${githubToken}`
+          Authorization: `token ${github_token}`
         },
         params: {
           per_page: 100

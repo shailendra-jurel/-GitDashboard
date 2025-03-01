@@ -2,6 +2,8 @@ import { GithubOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { Button, Card, Typography, Alert, Spin } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import apiService from '../../services/apiService';
+
 
 const { Title, Text } = Typography;
 
@@ -29,13 +31,33 @@ const Login = ({ setIsAuthenticated }) => {
           setLoading(true);
           
           // Verify token is valid before saving
-          const response = await fetch('/api/auth/verify', {
+          // const response = await fetch('/api/auth/verify', {
+          //   headers: {
+          //     Authorization: `Bearer ${token}`
+          //   }
+          // });
+    //       if (response.ok) {
+    //         localStorage.setItem('github_token', token);
+    //         setIsAuthenticated(true);
+    //         navigate('/dashboard');
+    //       } else {
+    //         setError('Invalid or expired token. Please try again.');
+    //         console.error('Token verification failed');
+    //       }
+    //     } catch (err) {
+    //       console.error('Error during callback processing:', err);
+    //       setError('Error processing login. Please try again.');
+    //     } finally {
+    //       setLoading(false);
+    //     }
+    //   }
+    // };
+          const data = await apiService.get('/auth/verify', {
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
-          
-          if (response.ok) {
+          if (data.valid) {
             localStorage.setItem('github_token', token);
             setIsAuthenticated(true);
             navigate('/dashboard');
@@ -51,6 +73,10 @@ const Login = ({ setIsAuthenticated }) => {
         }
       }
     };
+
+
+
+          
     
     handleCallback();
   }, [location, navigate, setIsAuthenticated]);

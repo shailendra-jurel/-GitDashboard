@@ -6,12 +6,12 @@ const router = express.Router();
 // Get all repositories for the user
 router.get('/', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     
     // Fetch user's repositories
     const response = await axios.get('https://api.github.com/user/repos', {
       headers: {
-        Authorization: `token ${githubToken}`
+        Authorization: `token ${github_token}`
       },
       params: {
         per_page: 100,
@@ -81,13 +81,13 @@ router.post('/selected', (req, res) => {
 // Get repository details
 router.get('/:owner/:repo', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     const { owner, repo } = req.params;
     
     // Fetch repository details
     const repoResponse = await axios.get(`https://api.github.com/repos/${owner}/${repo}`, {
       headers: {
-        Authorization: `token ${githubToken}`
+        Authorization: `token ${github_token}`
       }
     });
     
@@ -126,13 +126,13 @@ router.get('/:owner/:repo', async (req, res) => {
 // Get contributors for a repository
 router.get('/:owner/:repo/contributors', async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     const { owner, repo } = req.params;
     
     // Fetch contributors
     const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/contributors`, {
       headers: {
-        Authorization: `token ${githubToken}`
+        Authorization: `token ${github_token}`
       },
       params: {
         per_page: 100

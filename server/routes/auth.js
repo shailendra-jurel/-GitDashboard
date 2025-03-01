@@ -21,14 +21,14 @@ router.get('/github/callback',
         { 
           id: req.user.id, 
           username: req.user.username, 
-          githubToken: req.user.githubToken 
+          github_token: req.user.github_token 
         },
         process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
         { expiresIn: '24h' }
       );
       
       // Redirect to frontend with token
-      res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/auth/callback?token=${token}`); 
+      res.redirect(`${(process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app').replace(/\/$/, '')}/auth/callback?token=${token}`); 
     } catch (error) {
       console.error('Token generation error:', error);
       res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/login?error=token_generation_failed`);
@@ -60,16 +60,16 @@ router.post('/callback', async (req, res) => {
       }
     );
     
-    const { access_token } = tokenResponse.data;
+    const { access_token } = tokenResponse.data; // shailendraF
     
-    if (!access_token) {
+    if (!access_token) {  // shailendraF
       return res.status(400).json({ error: 'Failed to obtain access token' });
     }
     
     // Get user profile
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
-        Authorization: `token ${access_token}`
+        Authorization: `token ${access_token}`// shailendraF
       }
     });
     
@@ -78,12 +78,12 @@ router.post('/callback', async (req, res) => {
       login: userResponse.data.login,
       avatarUrl: userResponse.data.avatar_url,
       name: userResponse.data.name || userResponse.data.login,
-      githubToken: access_token
+      github_token: access_token // shailendraF
     };
     
     // Create JWT token
     const token = jwt.sign(
-      { id: user.id, login: user.login, githubToken: access_token },
+      { id: user.id, login: user.login, github_token: access_token }, // shailendraF
       process.env.JWT_SECRET || 'your-jwt-secret-key',
       { expiresIn: '1d' }
     );
@@ -128,15 +128,15 @@ router.get('/verify', (req, res) => {
 // Get user data
 router.get('/user', authenticateJWT, async (req, res) => {
   try {
-    const { githubToken } = req.user;
+    const { github_token } = req.user;
     
-    if (!githubToken) {
+    if (!github_token) {
       return res.status(400).json({ error: 'GitHub token not found' });
     }
     
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
-        Authorization: `token ${githubToken}`
+        Authorization: `token ${github_token}`
       }
     });
     

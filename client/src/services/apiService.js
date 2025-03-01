@@ -1,6 +1,4 @@
-// const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com';
-const API_URL = 'https://gitdashboard.onrender.com';
-
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com';
 /**
  * Makes API requests with proper authentication headers
  */
