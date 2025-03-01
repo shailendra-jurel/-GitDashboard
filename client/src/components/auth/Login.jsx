@@ -3,6 +3,8 @@ import { Button, Card, Typography, Alert, Spin } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import apiService from '../../services/apiService';
+const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com';
+
 
 
 const { Title, Text } = Typography;
@@ -74,6 +76,9 @@ const Login = ({ setIsAuthenticated }) => {
       }
     };
 
+    console.log("Current URL:", window.location.href);
+  console.log("Search params:", location.search);
+
 
 
           
@@ -89,7 +94,7 @@ const Login = ({ setIsAuthenticated }) => {
     localStorage.removeItem('github_token');
     
     // Redirect to GitHub OAuth
-    window.location.href = '/api/auth/github';
+    window.location.href = `${API_URL}/api/auth/github`;
   };
   
   if (loading) {
