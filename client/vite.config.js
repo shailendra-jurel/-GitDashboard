@@ -1,25 +1,22 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-// Properly access environment variables in Vite
-const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com';
-// const backendUrl =  'http://localhost:5000';
+import { defineConfig, loadEnv } from 'vite';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [tailwindcss(), react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: backendUrl,
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  },
+export default defineConfig(({ command, mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  const env = loadEnv(mode, process.cwd(), '')
   
-})
+  return {
+    plugins: [tailwindcss(), react()],
+    server: {
+      proxy: {
+        '/api': {
+          target: env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+  }
+});
