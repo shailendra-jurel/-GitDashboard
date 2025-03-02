@@ -16,19 +16,22 @@ router.get('/github/callback',
   }),
   (req, res) => {
     try {
-      // Generate JWT token
+      // Generate JWT token - ensure consistent property naming
       const token = jwt.sign(
         { 
           id: req.user.id, 
-          username: req.user.username, 
-          github_token: req.user.github_token 
+          username: req.user.username,
+          // Ensure consistent property name for GitHub token
+          github_token: req.user.githubToken
         },
         process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
         { expiresIn: '24h' }
       );
       
       // Redirect to frontend with token
-      res.redirect(`${(process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app').replace(/\/$/, '')}/auth/callback?token=${token}`); 
+      const redirectUrl = `${(process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app').replace(/\/$/, '')}/auth/callback?token=${token}`;
+      console.log('Redirecting to:', redirectUrl);
+      res.redirect(redirectUrl); 
     } catch (error) {
       console.error('Token generation error:', error);
       res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/login?error=token_generation_failed`);
@@ -60,16 +63,16 @@ router.post('/callback', async (req, res) => {
       }
     );
     
-    const { access_token } = tokenResponse.data; // shailendraF
+    const { access_token } = tokenResponse.data;
     
-    if (!access_token) {  // shailendraF
+    if (!access_token) {
       return res.status(400).json({ error: 'Failed to obtain access token' });
     }
     
     // Get user profile
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
-        Authorization: `token ${access_token}`// shailendraF
+        Authorization: `token ${access_token}`
       }
     });
     
@@ -78,13 +81,17 @@ router.post('/callback', async (req, res) => {
       login: userResponse.data.login,
       avatarUrl: userResponse.data.avatar_url,
       name: userResponse.data.name || userResponse.data.login,
-      github_token: access_token // shailendraF
+      github_token: access_token
     };
     
-    // Create JWT token
+    // Create JWT token - use consistent property naming
     const token = jwt.sign(
-      { id: user.id, login: user.login, github_token: access_token }, // shailendraF
-      process.env.JWT_SECRET || 'your-jwt-secret-key',
+      { 
+        id: user.id, 
+        username: user.login, // Ensure username is consistent
+        github_token: access_token 
+      },
+      process.env.JWT_SECRET || 'github-dashboard-jwt-secret',
       { expiresIn: '1d' }
     );
     
@@ -109,7 +116,7 @@ router.get('/verify', (req, res) => {
     return res.status(401).json({ error: 'Bearer token required' });
   }
   
-  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key', (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, decoded) => {
     if (err) {
       console.error('Token verification error:', err.message);
       return res.status(401).json({ error: 'Invalid token' });
@@ -184,7 +191,7 @@ function authenticateJWT(req, res, next) {
     return res.status(401).json({ error: 'Bearer token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key', (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
     if (err) {
       console.error('JWT verification error:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });

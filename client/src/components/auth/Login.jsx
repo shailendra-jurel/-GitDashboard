@@ -5,8 +5,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import apiService from '../../services/apiService';
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com';
 
-
-
 const { Title, Text } = Typography;
 
 const Login = ({ setIsAuthenticated }) => {
@@ -17,9 +15,14 @@ const Login = ({ setIsAuthenticated }) => {
   
   useEffect(() => {
     const handleCallback = async () => {
+      // Extract token and error from URL
       const params = new URLSearchParams(location.search);
       const token = params.get('token');
       const errorParam = params.get('error');
+      
+      console.log("Current URL:", window.location.href);
+      console.log("Search params:", location.search);
+      console.log("Token from URL:", token ? `${token.substring(0, 15)}...` : "No token");
       
       if (errorParam) {
         setError(errorParam === 'auth_failed' 
@@ -32,40 +35,29 @@ const Login = ({ setIsAuthenticated }) => {
         try {
           setLoading(true);
           
-          // Verify token is valid before saving
-          // const response = await fetch('/api/auth/verify', {
-          //   headers: {
-          //     Authorization: `Bearer ${token}`
-          //   }
-          // });
-    //       if (response.ok) {
-    //         localStorage.setItem('github_token', token);
-    //         setIsAuthenticated(true);
-    //         navigate('/dashboard');
-    //       } else {
-    //         setError('Invalid or expired token. Please try again.');
-    //         console.error('Token verification failed');
-    //       }
-    //     } catch (err) {
-    //       console.error('Error during callback processing:', err);
-    //       setError('Error processing login. Please try again.');
-    //     } finally {
-    //       setLoading(false);
-    //     }
-    //   }
-    // };
-          const data = await apiService.get('/auth/verify', {
-            headers: {
-              Authorization: `Bearer ${token}`
+          // Store token first
+          localStorage.setItem('github_token', token);
+          
+          // Verify token with backend
+          try {
+            // Set the Authorization header for all future requests
+            apiService.setAuthToken(token);
+            
+            const data = await apiService.get('/auth/verify');
+            
+            if (data && data.valid) {
+              console.log("Token verified successfully");
+              setIsAuthenticated(true);
+              navigate('/dashboard', { replace: true });
+            } else {
+              setError('Invalid or expired token. Please try again.');
+              localStorage.removeItem('github_token');
+              console.error('Token verification failed');
             }
-          });
-          if (data.valid) {
-            localStorage.setItem('github_token', token);
-            setIsAuthenticated(true);
-            navigate('/dashboard');
-          } else {
-            setError('Invalid or expired token. Please try again.');
-            console.error('Token verification failed');
+          } catch (err) {
+            console.error('Error verifying token:', err);
+            localStorage.removeItem('github_token');
+            setError('Error processing login. Please try again.');
           }
         } catch (err) {
           console.error('Error during callback processing:', err);
@@ -75,13 +67,6 @@ const Login = ({ setIsAuthenticated }) => {
         }
       }
     };
-
-    console.log("Current URL:", window.location.href);
-  console.log("Search params:", location.search);
-
-
-
-          
     
     handleCallback();
   }, [location, navigate, setIsAuthenticated]);
@@ -92,6 +77,7 @@ const Login = ({ setIsAuthenticated }) => {
     
     // Clear any existing token before starting new auth flow
     localStorage.removeItem('github_token');
+    apiService.clearAuthToken();
     
     // Redirect to GitHub OAuth
     window.location.href = `${API_URL}/api/auth/github`;

@@ -15,9 +15,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Set up allowed origins
+const allowedOrigins = [
+  'https://git-dashboard-rho.vercel.app',
+  process.env.CLIENT_URL,
+  'http://localhost:5173'
+];
+
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -27,7 +43,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session config
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+  secret: process.env.SESSION_SECRET || 'github-dashboard-session-secret',
   resave: false,
   saveUninitialized: false
 }));
@@ -45,13 +61,13 @@ passport.use(new GitHubStrategy({
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      // Store GitHub access token with the user profile
+      // Store GitHub access token with the user profile using consistent naming
       const user = {
         id: profile.id,
         username: profile.username,
         displayName: profile.displayName || profile.username,
         avatarUrl: profile._json.avatar_url,
-        githubToken: accessToken
+        githubToken: accessToken // This will be mapped to github_token in the JWT
       };
       
       return done(null, user);
@@ -84,7 +100,7 @@ const authenticateJWT = (req, res, next) => {
     return res.status(401).json({ error: 'Bearer token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-secret-key', (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'github-dashboard-jwt-secret', (err, user) => {
     if (err) {
       console.error('JWT verification error:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
@@ -105,6 +121,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/repositories', authenticateJWT, repositoryRoutes);
 app.use('/api/dashboard', authenticateJWT, dashboardRoutes);
 
+// Pre-flight options for CORS
+app.options('*', cors());
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
@@ -117,7 +141,7 @@ if (process.env.NODE_ENV === 'production') {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err.stack);
-  res.status(500).json({ error: 'Server error occurred' });
+  res.status(500).json({ error: 'Server error occurred', message: err.message });
 });
 
 app.listen(PORT, () => {
