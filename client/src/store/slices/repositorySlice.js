@@ -72,6 +72,29 @@ const repositorySlice = createSlice({
       // Normalize the repository before storing
       state.currentRepository = normalizeRepository(action.payload);
       console.log('Current repository set:', state.currentRepository);
+    },
+    removeSelectedRepository: (state, action) => {
+      const repoId = action.payload;
+      
+      // Remove repository from selected list
+      state.selected = state.selected.filter(repo => repo.id !== repoId);
+      
+      // Update localStorage
+      localStorage.setItem('selectedRepositories', JSON.stringify(state.selected));
+      
+      console.log('Repository removed from selection:', repoId);
+      
+      // If current repository was removed, set a new one
+      if (state.currentRepository && state.currentRepository.id === repoId) {
+        state.currentRepository = state.selected.length > 0 ? normalizeRepository(state.selected[0]) : null;
+        console.log('Current repository updated after removal:', state.currentRepository);
+      }
+    },
+    removeAllRepositories: (state) => {
+      state.selected = [];
+      state.currentRepository = null;
+      localStorage.removeItem('selectedRepositories');
+      console.log('All repositories removed from selection');
     }
   },
   extraReducers: (builder) => {
@@ -106,7 +129,13 @@ const repositorySlice = createSlice({
         state.error = action.payload;
         console.error('Repository fetch rejected:', action.payload);
       })
+      .addCase(saveSelectedRepositories.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(saveSelectedRepositories.fulfilled, (state, action) => {
+        state.loading = false;
+        
         // Normalize the selected repositories
         state.selected = action.payload.repositories?.map(normalizeRepository) || 
                         action.meta.arg.map(normalizeRepository);
@@ -118,9 +147,19 @@ const repositorySlice = createSlice({
           state.currentRepository = normalizeRepository(state.selected[0]);
           console.log('Current repository set after save:', state.currentRepository);
         }
+      })
+      .addCase(saveSelectedRepositories.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        console.error('Repository save rejected:', action.payload);
       });
   }
 });
 
-export const { setCurrentRepository } = repositorySlice.actions;
+export const { 
+  setCurrentRepository, 
+  removeSelectedRepository,
+  removeAllRepositories
+} = repositorySlice.actions;
+
 export default repositorySlice.reducer;

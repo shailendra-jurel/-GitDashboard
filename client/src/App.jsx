@@ -4,24 +4,42 @@ import { Provider } from 'react-redux';
 import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import apiService from './services/apiService';
 import store from './store';
+import createTheme from './theme';
 
 // Components
 import Login from './components/auth/Login';
 import Dashboard from './components/dashboard/Dashboard';
-import Navbar from './components/layout/Navbar';
 import RepositorySelection from './components/repositories/RepositorySelection';
 
 // Styles
 import 'antd/dist/reset.css';
 import './App.css';
 
+const LoadingScreen = ({ message }) => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    backgroundColor: '#f6f8fa'
+  }}>
+    <div style={{ 
+      textAlign: 'center', 
+      padding: 32, 
+      background: '#fff', 
+      borderRadius: 8,
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+      maxWidth: '1200px'
+    }}>
+      <Spin size="large" />
+      <div style={{ marginTop: 16, color: '#666' }}>{message}</div>
+    </div>
+  </div>
+);
+
 const PrivateRoute = ({ isAuthenticated, isLoading }) => {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spin size="large" tip="Verifying authentication..." />
-      </div>
-    );
+    return <LoadingScreen message="Verifying authentication..." />;
   }
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
 };
@@ -29,43 +47,56 @@ const PrivateRoute = ({ isAuthenticated, isLoading }) => {
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Create theme based on light/dark mode
+  const theme = createTheme(isDarkMode);
+  
+  // Check for saved theme preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setIsDarkMode(true);
+    } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      // Use system preference if no saved preference
+      setIsDarkMode(true);
+      localStorage.setItem('theme', 'dark');
+    }
+  }, []);
+  
+  // Toggle theme function (can be passed to components)
+  const toggleTheme = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         const token = localStorage.getItem('github_token');
         
-        console.log('App - Checking auth status, token exists:', !!token);
-        
         if (!token) {
-          console.log('App - No token found, setting unauthenticated');
           setIsAuthenticated(false);
           setLoading(false);
           return;
         }
         
-        // Use the API service for verification
         try {
-          console.log('App - Setting auth token and verifying');
           apiService.setAuthToken(token);
-          
           const data = await apiService.get('/auth/verify');
           
           if (data && data.valid) {
-            console.log('App - Token verified successfully');
             setIsAuthenticated(true);
           } else {
-            console.log('App - Token verification failed, clearing token');
             localStorage.removeItem('github_token');
             setIsAuthenticated(false);
           }
         } catch (err) {
-          console.error('App - Error verifying token:', err);
           localStorage.removeItem('github_token');
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('App - Auth verification error:', error);
         localStorage.removeItem('github_token');
         setIsAuthenticated(false);
       } finally {
@@ -76,51 +107,45 @@ const App = () => {
     checkAuthStatus();
   }, []);
 
-  // Handle auth changes
   const handleAuthChange = (status) => {
-    console.log('App - Auth status changed to:', status);
     setIsAuthenticated(status);
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Spin size="large" tip="Loading application..." />
-      </div>
-    );
+    return <LoadingScreen message="Loading application..." />;
   }
 
   return (
     <Provider store={store}>
-      <ConfigProvider>
+      <ConfigProvider theme={theme}>
         <Router>
-          <div className="min-h-screen bg-gray-50">
-            {isAuthenticated && <Navbar />}
-            <div className="container mx-auto px-4">
-              <Routes>
-                <Route  
-                  path="/" 
-                  element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={handleAuthChange} />}   
-                />
-                
-                <Route 
-                  path="/login" 
-                  element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={handleAuthChange} />} 
-                />
-                
-                <Route 
-                  path="/auth/callback" 
-                  element={<Login setIsAuthenticated={handleAuthChange} />} 
-                />
-                
-                <Route element={<PrivateRoute isAuthenticated={isAuthenticated} isLoading={loading} />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/select-repositories" element={<RepositorySelection />} />
-                </Route>
-                
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </div>
+          <div style={{ 
+            minHeight: '100vh', 
+            backgroundColor: theme.token.colorBgContainer === '#ffffff' ? '#f6f8fa' : '#0d1117' 
+          }}>
+            <Routes>
+              <Route  
+                path="/" 
+                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={handleAuthChange} />}   
+              />
+              
+              <Route 
+                path="/login" 
+                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login setIsAuthenticated={handleAuthChange} />} 
+              />
+              
+              <Route 
+                path="/auth/callback" 
+                element={<Login setIsAuthenticated={handleAuthChange} />} 
+              />
+              
+              <Route element={<PrivateRoute isAuthenticated={isAuthenticated} isLoading={loading} />}>
+                <Route path="/dashboard" element={<Dashboard toggleTheme={toggleTheme} isDarkMode={isDarkMode} />} />
+                <Route path="/select-repositories" element={<RepositorySelection toggleTheme={toggleTheme} isDarkMode={isDarkMode} />} />
+              </Route>
+              
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
           </div>
         </Router>
       </ConfigProvider>
