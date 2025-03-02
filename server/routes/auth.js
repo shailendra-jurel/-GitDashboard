@@ -28,13 +28,16 @@ router.get('/github/callback',
         { expiresIn: '24h' }
       );
       
-      // Redirect to frontend with token
-      const redirectUrl = `${(process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app').replace(/\/$/, '')}/auth/callback?token=${token}`;
-      console.log('Redirecting to:', redirectUrl);
+      // Determine the correct frontend URL for redirection
+      const clientUrl = process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app';
+      const redirectUrl = `${clientUrl.replace(/\/$/, '')}/auth/callback?token=${token}`;
+      
+      console.log('Auth successful, redirecting to:', redirectUrl);
       res.redirect(redirectUrl); 
     } catch (error) {
       console.error('Token generation error:', error);
-      res.redirect(`${process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app'}/login?error=token_generation_failed`);
+      const clientUrl = process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app';
+      res.redirect(`${clientUrl}/login?error=token_generation_failed`);
     }
   }
 );

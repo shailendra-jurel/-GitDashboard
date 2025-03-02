@@ -3,6 +3,7 @@ import { Button, Card, Typography, Alert, Spin } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import apiService from '../../services/apiService';
+
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'https://gitdashboard.onrender.com';
 
 const { Title, Text } = Typography;
@@ -14,16 +15,21 @@ const Login = ({ setIsAuthenticated }) => {
   const [error, setError] = useState(null);
   
   useEffect(() => {
+    // Determine if we're in the OAuth callback flow
+    const isCallback = location.pathname === '/auth/callback';
+    
+    // Extract token and error from URL
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    const errorParam = params.get('error');
+    
+    // Debug logging
+    console.log("Auth check - Current URL:", window.location.href);
+    console.log("Auth check - Is callback:", isCallback);
+    console.log("Auth check - Error in URL:", errorParam);
+    console.log("Auth check - Token present:", token ? "Yes" : "No");
+    
     const handleCallback = async () => {
-      // Extract token and error from URL
-      const params = new URLSearchParams(location.search);
-      const token = params.get('token');
-      const errorParam = params.get('error');
-      
-      console.log("Current URL:", window.location.href);
-      console.log("Search params:", location.search);
-      console.log("Token from URL:", token ? `${token.substring(0, 15)}...` : "No token");
-      
       if (errorParam) {
         setError(errorParam === 'auth_failed' 
           ? 'Authentication failed. Please try again.' 
@@ -31,9 +37,10 @@ const Login = ({ setIsAuthenticated }) => {
         return;
       }
       
-      if (token && location.pathname === '/auth/callback') {
+      if (token && isCallback) {
         try {
           setLoading(true);
+          console.log("Processing authentication callback with token");
           
           // Store token first
           localStorage.setItem('github_token', token);
@@ -68,7 +75,9 @@ const Login = ({ setIsAuthenticated }) => {
       }
     };
     
-    handleCallback();
+    if (isCallback || errorParam) {
+      handleCallback();
+    }
   }, [location, navigate, setIsAuthenticated]);
   
   const handleLogin = () => {
@@ -79,8 +88,12 @@ const Login = ({ setIsAuthenticated }) => {
     localStorage.removeItem('github_token');
     apiService.clearAuthToken();
     
+    // Log the redirect URL
+    const authUrl = `${API_URL}/api/auth/github`;
+    console.log("Redirecting to GitHub OAuth:", authUrl);
+    
     // Redirect to GitHub OAuth
-    window.location.href = `${API_URL}/api/auth/github`;
+    window.location.href = authUrl;
   };
   
   if (loading) {
@@ -131,6 +144,13 @@ const Login = ({ setIsAuthenticated }) => {
         >
           Sign in with GitHub
         </Button>
+        
+        <div className="mt-4 text-center text-gray-500 text-xs">
+          {import.meta.env.MODE === 'development' 
+            ? 'Running in development mode' 
+            : 'Running in production mode'
+          }
+        </div>
       </Card>
     </div>
   );

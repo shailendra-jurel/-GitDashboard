@@ -15,11 +15,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Set up allowed origins
+// Set up allowed origins - expanded to be more flexible
 const allowedOrigins = [
   'https://git-dashboard-rho.vercel.app',
+  'https://git-dashboard.vercel.app',
   process.env.CLIENT_URL,
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://gitdashboard.onrender.com'
 ];
 
 // Middleware
@@ -28,8 +31,14 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
+    // Check if the origin is allowed or if it's a subdomain of an allowed domain
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      return origin === allowedOrigin || origin.endsWith(`.${allowedOrigin.replace(/^https?:\/\//, '')}`);
+    });
+    
+    if (!isAllowed) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      console.warn(`CORS blocked for origin: ${origin}`);
       return callback(new Error(msg), false);
     }
     return callback(null, true);
@@ -52,15 +61,20 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Enhanced logging for GitHub callback URL
+const callbackURL = process.env.GITHUB_CALLBACK_URL || 'https://gitdashboard.onrender.com/api/auth/github/callback';
+console.log('Using GitHub callback URL:', callbackURL);
+
 // Passport GitHub strategy
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL || 'https://gitdashboard.onrender.com/api/auth/github/callback',
+    callbackURL: callbackURL,
     scope: ['user', 'repo']
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log('GitHub authentication successful for user:', profile.username);
       // Store GitHub access token with the user profile using consistent naming
       const user = {
         id: profile.id,
@@ -72,6 +86,7 @@ passport.use(new GitHubStrategy({
       
       return done(null, user);
     } catch (error) {
+      console.error('GitHub authentication error:', error);
       return done(error, null);
     }
   }
@@ -129,6 +144,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug route to check environment variables
+app.get('/api/debug/env', (req, res) => {
+  res.json({
+    nodeEnv: process.env.NODE_ENV,
+    clientUrl: process.env.CLIENT_URL,
+    githubCallbackUrl: process.env.GITHUB_CALLBACK_URL,
+    allowedOrigins
+  });
+});
+
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
@@ -146,6 +171,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`CLIENT_URL: ${process.env.CLIENT_URL}`);
 });
 
 module.exports = app;
