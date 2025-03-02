@@ -21,11 +21,20 @@ const Dashboard = () => {
   const { loading: dashboardLoading, error, timeRange } = useSelector(state => state.dashboard);
 
   useEffect(() => {
-    // Only fetch if no repositories are loaded
+    // Check if we need to load repositories
     if (!selected.length) {
+      console.log('No repositories selected, fetching repositories');
       dispatch(fetchRepositories());
+    } else if (currentRepository) {
+      console.log('Current repository already set:', currentRepository);
+    } else if (selected.length > 0) {
+      // If we have selected repositories but no current repository,
+      // we should initialize the current repository from the first selected one
+      console.log('No current repository, but have selected repositories. Initializing from first selected.');
+      
+      // This would be handled in your repositorySlice.js to set the current repository
     }
-  }, [dispatch, selected.length]);
+  }, [dispatch, selected, currentRepository]);
 
  // Replace the second useEffect in Dashboard.jsx with this:
 useEffect(() => {

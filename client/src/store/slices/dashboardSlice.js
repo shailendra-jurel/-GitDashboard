@@ -6,13 +6,16 @@ export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchData',
   async ({ owner, repo, timeRange }, { rejectWithValue }) => {
     try {
-      // Check if owner and repo are defined
+      // Enhanced validation with detailed error message
       if (!owner || !repo) {
-        return rejectWithValue('Repository information is missing');
+        console.error('Repository data incomplete:', { owner, repo, timeRange });
+        return rejectWithValue('Repository owner or name is missing. Please select a repository again.');
       }
       
-      return await apiService.get(`/dashboard/${owner}/${repo}/metrics?timeRange=${timeRange}`);
+      console.log('Fetching dashboard data for:', { owner, repo, timeRange });
+      return await apiService.get(`/dashboard/${owner}/${repo}/metrics?timeRange=${timeRange || '3m'}`);
     } catch (error) {
+      console.error('Dashboard data fetch error:', error);
       return rejectWithValue(error.message || 'Failed to fetch dashboard data');
     }
   }
