@@ -13,10 +13,11 @@
           { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
         ]
       }
-    ],
-    "routes": [
-      { "src": "/auth/callback", "dest": "/index.html" },
-      { "handle": "filesystem" },
-      { "src": "/(.*)", "dest": "/index.html" }
     ]
+    // ,
+    // "routes": [
+    //   { "src": "/auth/callback", "dest": "/index.html" },
+    //   { "handle": "filesystem" },
+    //   { "src": "/(.*)", "dest": "/index.html" }
+    // ]
   }
