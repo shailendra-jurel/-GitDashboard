@@ -11,8 +11,29 @@ const DashboardHeader = ({ repository }) => {
   const dispatch = useDispatch();
   const { timeRange, loading } = useSelector(state => state.dashboard);
 
-  // Ensure repository has required properties
-  if (!repository || !repository.owner || !repository.name) {
+  // Extract repository information consistently
+  if (!repository) {
+    return null;
+  }
+
+  // Extract owner and repo name with fallbacks
+  let ownerName;
+  let repoName = repository.name;
+
+  if (repository.full_name) {
+    const parts = repository.full_name.split('/');
+    ownerName = parts[0];
+    if (!repoName) repoName = parts[1];
+  } else if (repository.fullName) {
+    const parts = repository.fullName.split('/');
+    ownerName = parts[0];
+    if (!repoName) repoName = parts[1];
+  } else if (repository.owner) {
+    ownerName = repository.owner.login || repository.owner.name;
+  }
+
+  if (!ownerName || !repoName) {
+    console.error('Missing repository info in DashboardHeader:', repository);
     return null;
   }
 
@@ -20,16 +41,16 @@ const DashboardHeader = ({ repository }) => {
     const newTimeRange = e.target.value;
     dispatch(setTimeRange(newTimeRange));
     dispatch(fetchDashboardData({ 
-      owner: repository.owner.login, 
-      repo: repository.name, 
+      owner: ownerName, 
+      repo: repoName, 
       timeRange: newTimeRange 
     }));
   };
 
   const handleRefresh = () => {
     dispatch(fetchDashboardData({ 
-      owner: repository.owner.login, 
-      repo: repository.name, 
+      owner: ownerName, 
+      repo: repoName, 
       timeRange 
     }));
   };

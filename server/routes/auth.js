@@ -142,9 +142,11 @@ router.get('/user', authenticateJWT, async (req, res) => {
     const { github_token } = req.user;
     
     if (!github_token) {
+      console.error('GitHub token not found in user object:', req.user);
       return res.status(400).json({ error: 'GitHub token not found' });
     }
     
+    console.log('Fetching GitHub user data');
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
         Authorization: `token ${github_token}`
@@ -160,10 +162,15 @@ router.get('/user', authenticateJWT, async (req, res) => {
       email: userResponse.data.email
     };
     
+    console.log('User data fetched successfully');
     res.json(userData);
   } catch (error) {
     console.error('Error fetching user data:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch user data' });
+    if (error.response?.status === 401) {
+      res.status(401).json({ error: 'GitHub token expired or invalid' });
+    } else {
+      res.status(500).json({ error: 'Failed to fetch user data' });
+    }
   }
 });
 

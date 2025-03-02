@@ -27,29 +27,50 @@ const Dashboard = () => {
     }
   }, [dispatch, selected.length]);
 
-  useEffect(() => {
-    if (currentRepository) {
-      const ownerName = currentRepository.owner?.login || 
-                       currentRepository.owner?.name || 
-                       (currentRepository.fullName && currentRepository.fullName.split('/')[0]);
-      
-      const repoName = currentRepository.name || 
-                      (currentRepository.fullName && currentRepository.fullName.split('/')[1]);
+ // Replace the second useEffect in Dashboard.jsx with this:
+useEffect(() => {
+  if (currentRepository) {
+    // Consistent extraction of owner and repo name with fallbacks
+    let ownerName;
+    let repoName;
 
-      if (ownerName && repoName) {
-        dispatch(fetchDashboardData({ 
-          owner: ownerName,
-          repo: repoName,
-          timeRange 
-        }));
-        
-        dispatch(fetchContributors({ 
-          owner: ownerName,
-          repo: repoName 
-        }));
-      }
+    // Handle different repository object structures
+    if (currentRepository.full_name) {
+      // For API response format
+      const parts = currentRepository.full_name.split('/');
+      ownerName = parts[0];
+      repoName = parts[1];
+    } else if (currentRepository.fullName) {
+      // For custom format
+      const parts = currentRepository.fullName.split('/');
+      ownerName = parts[0];
+      repoName = parts[1];
+    } else {
+      // Direct properties
+      ownerName = currentRepository.owner?.login || 
+                 currentRepository.owner?.name;
+      repoName = currentRepository.name;
     }
-  }, [dispatch, currentRepository, timeRange]);
+
+    // Add debug logging
+    console.log('Fetching dashboard data for:', { ownerName, repoName, timeRange });
+
+    if (ownerName && repoName) {
+      dispatch(fetchDashboardData({ 
+        owner: ownerName,
+        repo: repoName,
+        timeRange 
+      }));
+      
+      dispatch(fetchContributors({ 
+        owner: ownerName,
+        repo: repoName 
+      }));
+    } else {
+      console.error('Missing repository information:', currentRepository);
+    }
+  }
+}, [dispatch, currentRepository, timeRange]);
 
   if (repoLoading && selected.length === 0) {
     return (

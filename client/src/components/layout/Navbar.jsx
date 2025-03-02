@@ -10,29 +10,31 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('github_token');
-        if (!token) return;
+  // Replace the useEffect in Navbar.jsx with this:
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('github_token');
+      if (!token) return;
 
-        const response = await fetch('/api/auth/user', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
+      // Use apiService instead of direct fetch
+      import('../../services/apiService').then(async ({ default: apiService }) => {
+        try {
+          console.log('Fetching user profile data');
+          const userData = await apiService.get('/auth/user');
+          console.log('User profile data received:', userData);
           setUser(userData);
+        } catch (error) {
+          console.error('Failed to fetch user data via apiService:', error);
         }
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-      }
-    };
+      });
+    } catch (error) {
+      console.error('Error in user data fetch:', error);
+    }
+  };
 
-    fetchUserData();
-  }, []);
+  fetchUserData();
+}, []);
 
   const handleLogout = () => {
     localStorage.removeItem('github_token');
