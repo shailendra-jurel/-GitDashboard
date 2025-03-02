@@ -155,13 +155,22 @@ app.get('/api/debug/env', (req, res) => {
 });
 
 // Serve static assets in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/build')));
+// if (process.env.NODE_ENV === 'production') {
+//   app.use(express.static(path.join(__dirname, 'client/build')));
   
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-  });
-}
+//   app.get('*', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+//   });
+// }
+
+// Only handle API routes - no static file serving for API server
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  // Redirect non-API requests to frontend
+  res.redirect(process.env.CLIENT_URL || 'https://git-dashboard-rho.vercel.app');
+});
 
 // Global error handler
 app.use((err, req, res, next) => {
